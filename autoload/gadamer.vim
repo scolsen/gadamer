@@ -5,15 +5,18 @@
 let s:sign_annotation = '*'
 exe "sign define gadamer text=" . s:sign_annotation
 
+" initialized to 0.
 let s:current_signs = {}
+let s:current_signs.signs = {}
 let s:gadamer_winheight = 12
+let s:next_key = 0
 
 function! s:current_signs.ids() 
-  return sort(keys(self), 'n')
+  return sort(keys(self.signs), 'n')
 endfunction
 
-function! s:getNextKey()
-  return s:current_signs.ids()[-1] + 1
+function! s:current_signs.getNextKey()
+  let self.next_key = self.ids()[-1] + 1
 endfunction
 
 function! s:getSigns()
@@ -25,8 +28,11 @@ function! s:getSigns()
   for signl in split(placed_signs, '\n')[2:]
     let tokens = matchlist(signl, '\v^\s+\S+\=(\d+)\s+\S+\=(\d+)\s+\S+\=(.*)$') 
     let id = str2nr(tokens[2])
-    let s:current_signs[id] = str2nr(tokens[1])
+    let s:current_signs.signs[id] = str2nr(tokens[1])
   endfor
+  if len(s:current_signs.signs) <= 0
+    let s:current_signs.signs[0] = 0
+  endif
 endfunction
 
 function! s:getConfig() 
@@ -39,19 +45,20 @@ function! gadamer#Annotate()
   " Do everything we need to do to annotate a file.
   " Create a buffer, create a mark, on save, save the contents.
   " Maintain an association of file<->annotation.
-  call s:placeSign(line("."))
-  call s:openAnnotation()
+  call s:current_signs.getNextKey()
+  let f = s:current_signs.ids()
+  call s:placeSign(line("."), s:current_signs.next_key)
+  call s:openAnnotation(s:current_signs.next_key)
+  echo f
 endfunction!
 
-function! s:placeSign(line)
-  let l:id = s:getNextKey()
-  let s:current_signs[l:id] = a:line 
-  exe "sign place " . l:id . " line=" . a:line . " name=gadamer file=" . expand("%:p")  
+function! s:placeSign(line, id)
+  let s:current_signs.signs[a:id] = a:line 
+  exe "sign place " . a:id . " line=" . a:line . " name=gadamer file=" . expand("%:p")  
 endfunction
 
-function! s:openAnnotation()
-  exe s:gadamer_winheight . "sp dummy.md"
+function! s:openAnnotation(id)
+  exe s:gadamer_winheight . "sp " . expand("%:r") . "-annotation-" . a:id . ".md" 
 endfunction
 
 call s:getSigns()
-call s:getNextKey()
