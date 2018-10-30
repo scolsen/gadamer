@@ -15,7 +15,11 @@ function! s:current_signs.ids()
 endfunction
 
 function! s:current_signs.getNextKey()
-  let self.next_key = self.ids()[-1] + 1
+  if self.ids() == []
+    let self.next_key = 1
+  else
+    let self.next_key = self.ids()[-1] + 1
+  endif
 endfunction
 
 " Set the value of the script-local signs
@@ -37,9 +41,9 @@ function! s:getSigns()
     let id = str2nr(tokens[2])
     let s:current_signs.signs[id] = [str2nr(tokens[1])]
   endfor
-  if len(s:current_signs.signs) <= 0
-    let s:current_signs.signs[0] = [0, "/dev/null"]
-  endif
+  "if len(s:current_signs.signs) <= 0
+  "  let s:current_signs.signs[0] = [0, "/dev/null"]
+  "endif
 endfunction
 
 function! s:placeSign(line, id)
@@ -63,6 +67,8 @@ function! s:saveSigns()
   redi! END
 endfunction
 
+" Load signs from a saved .gadamer-config
+" Then place marks for each.
 function! s:loadSigns()
   let saved_signs = readfile(".gadamer-config")[1:]
   for item in saved_signs
@@ -71,7 +77,9 @@ function! s:loadSigns()
       let s:current_signs.signs[fields[1]] = [fields[2], fields[3]] 
     endif
   endfor
-  echo s:current_signs.signs
+  for [k, v] in items(s:current_signs.signs)
+    call s:placeSign(v[0], k)
+  endfor
 endfunction
 
 " Do everything we need to do to annotate a file.
@@ -84,6 +92,8 @@ function! gadamer#Annotate()
 endfunction
 
 call s:getSigns()
-call s:loadSigns()
+if filereadable(".gadamer-config")
+  call s:loadSigns()
+endif
 
 au VimLeave * call s:saveSigns()
