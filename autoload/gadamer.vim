@@ -64,7 +64,14 @@ function! s:saveSigns()
 endfunction
 
 function! s:loadSigns()
-
+  let saved_signs = readfile(".gadamer-config")[1:]
+  for item in saved_signs
+    let fields = split(item)
+    if fields[0] == expand("%")
+      let s:current_signs.signs[fields[1]] = [fields[2], fields[3]] 
+    endif
+  endfor
+  echo s:current_signs.signs
 endfunction
 
 " Do everything we need to do to annotate a file.
@@ -77,5 +84,6 @@ function! gadamer#Annotate()
 endfunction
 
 call s:getSigns()
+call s:loadSigns()
 
 au VimLeave * call s:saveSigns()
