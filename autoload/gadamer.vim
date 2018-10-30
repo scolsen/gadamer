@@ -46,10 +46,8 @@ function! gadamer#Annotate()
   " Create a buffer, create a mark, on save, save the contents.
   " Maintain an association of file<->annotation.
   call s:current_signs.getNextKey()
-  let f = s:current_signs.ids()
   call s:placeSign(line("."), s:current_signs.next_key)
   call s:openAnnotation(s:current_signs.next_key)
-  echo f
 endfunction!
 
 function! s:placeSign(line, id)
