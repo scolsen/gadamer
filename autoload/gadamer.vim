@@ -11,7 +11,8 @@ let s:gadamer_winheight = 12
 let s:next_key = 0
 
 function! s:current_signs.ids() 
-  return sort(keys(self.signs), 'n')
+  let ids = map(values(self.signs), function('get', [0]))
+  return sort(ids, 'n')
 endfunction
 
 function! s:current_signs.getNextKey()
@@ -38,23 +39,20 @@ function! s:getSigns()
   " https://github.com/mhinz/vim-signify
   for signl in split(placed_signs, '\n')[2:]
     let tokens = matchlist(signl, '\v^\s+\S+\=(\d+)\s+\S+\=(\d+)\s+\S+\=(.*)$') 
-    let id = str2nr(tokens[2])
-    let s:current_signs.signs[id] = [str2nr(tokens[1])]
+    let line = str2nr(tokens[1])
+    let s:current_signs.signs[line] = [str2nr(tokens[2])]
   endfor
-  "if len(s:current_signs.signs) <= 0
-  "  let s:current_signs.signs[0] = [0, "/dev/null"]
-  "endif
 endfunction
 
 function! s:placeSign(line, id)
-  let s:current_signs.signs[a:id] = [a:line] 
+  let s:current_signs.signs[a:line] = [a:id] 
   exe "sign place " . a:id . " line=" . a:line . " name=gadamer file=" . expand("%:p")  
 endfunction
 
-function! s:openAnnotation(id)
+function! s:openAnnotation(line, id)
   let fname = expand("%:r") . "-annotation-" . a:id . ".md"
   exe s:gadamer_winheight . "sp " . fname 
-  call add(s:current_signs.signs[a:id], fname)
+  call add(s:current_signs.signs[a:line], fname)
 endfunction
 
 function! s:saveSigns()
@@ -78,7 +76,7 @@ function! s:loadSigns()
     endif
   endfor
   for [k, v] in items(s:current_signs.signs)
-    call s:placeSign(v[0], k)
+    call s:placeSign(k, v[0])
   endfor
 endfunction
 
@@ -88,7 +86,7 @@ endfunction
 function! gadamer#Annotate()
   call s:current_signs.getNextKey()
   call s:placeSign(line("."), s:current_signs.next_key)
-  call s:openAnnotation(s:current_signs.next_key)
+  call s:openAnnotation(line("."), s:current_signs.next_key)
 endfunction
 
 call s:getSigns()
