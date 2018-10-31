@@ -2,10 +2,8 @@
 " Sign definitions.
 
 let s:sign_annotation = '*' 
-exe "sign define gadamer text=" . s:sign_annotation
-
-" initialized to 0.
-let s:current_signs = {}
+exe "sign define gadamer text=" . s:sign_annotation 
+let s:current_signs = {} 
 let s:current_signs.signs = {}
 let s:gadamer_winheight = 12
 let s:next_key = 0
@@ -45,14 +43,13 @@ function! s:getSigns()
 endfunction
 
 function! s:placeSign(line, id)
-  let s:current_signs.signs[a:line] = [a:id] 
   exe "sign place " . a:id . " line=" . a:line . " name=gadamer file=" . expand("%:p")  
-endfunction
+endfunction 
 
 function! s:openAnnotation(line, id)
   let fname = expand("%:r") . "-annotation-" . a:id . ".md"
+  let s:current_signs.signs[a:line] = [a:id, fname] 
   exe s:gadamer_winheight . "sp " . fname 
-  call add(s:current_signs.signs[a:line], fname)
 endfunction
 
 function! s:saveSigns()
@@ -87,6 +84,16 @@ function! gadamer#Annotate()
   call s:current_signs.getNextKey()
   call s:placeSign(line("."), s:current_signs.next_key)
   call s:openAnnotation(line("."), s:current_signs.next_key)
+endfunction
+
+function! gadamer#Read()
+  echo s:current_signs.signs
+  if has_key(s:current_signs.signs, line("."))
+    let anno = get(s:current_signs.signs, line("."))[1]
+    exe s:gadamer_winheight . "sp " . anno
+  else 
+    echo "No annotation file found."
+  endif
 endfunction
 
 call s:getSigns()
