@@ -7,6 +7,7 @@ let s:current_signs = {}
 let s:current_signs.signs = {}
 let s:gadamer_winheight = 12
 let s:next_key = 0
+let s:gadamer_dir = ".annotations"
 
 function! s:current_signs.ids() 
   let ids = map(values(self.signs), 'v:val[0]')
@@ -47,7 +48,7 @@ function! s:placeSign(line, id)
 endfunction 
 
 function! s:openAnnotation(line, id)
-  let fname = expand("%:r") . "-annotation-" . a:id . ".md"
+  let fname = s:gadamer_dir . "/" . expand("%:r") . "-annotation-" . a:id . ".md"
   let s:current_signs.signs[a:line] = [a:id, fname] 
   exe s:gadamer_winheight . "sp " . fname 
 endfunction
@@ -99,6 +100,10 @@ endfunction
 call s:getSigns()
 if filereadable(".gadamer-config")
   call s:loadSigns()
+endif
+
+if !isdirectory(s:gadamer_dir)
+  call mkdir(s:gadamer_dir)
 endif
 
 au VimLeave * call s:saveSigns()
