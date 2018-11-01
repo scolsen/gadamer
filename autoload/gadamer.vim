@@ -9,7 +9,7 @@ let s:gadamer_winheight = 12
 let s:next_key = 0
 
 function! s:current_signs.ids() 
-  let ids = map(values(self.signs), function('get', [0]))
+  let ids = map(values(self.signs), 'v:val[0]')
   return sort(ids, 'n')
 endfunction
 
@@ -80,7 +80,7 @@ endfunction
 " Do everything we need to do to annotate a file.
 " Create a buffer, create a mark, on save, save the contents.
 " Maintain an association of file<->annotation.
-function! gadamer#Annotate()
+function! gadamer#Annotate() abort
   call s:current_signs.getNextKey()
   call s:placeSign(line("."), s:current_signs.next_key)
   call s:openAnnotation(line("."), s:current_signs.next_key)
