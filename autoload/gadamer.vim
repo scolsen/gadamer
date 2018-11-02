@@ -1,13 +1,29 @@
 " Gadamer API functions.  
 " Sign definitions.
 
-let s:sign_annotation = '*' 
-exe "sign define gadamer text=" . s:sign_annotation 
 let s:current_signs = {} 
 let s:current_signs.signs = {}
-let s:gadamer_winheight = 12
 let s:next_key = 0
-let s:gadamer_dir = ".annotations"
+
+let s:global_prefix = "g:gadamer_"
+let s:config = {}
+let s:config.signchar = '*'
+let s:config.height = 12
+let s:config.directory = '.annotations'
+
+" Set the value of the script-local signs
+" to that of user configured globals
+" if they exist.
+function! s:getConfig() 
+  for key in keys(s:config)
+    let gvar = s:global_prefix . key
+    if exists(gvar)
+      let val = split(execute("echo " . gvar), '\n')[0]
+      echo val
+      exe "let " . "s:config." . key . "=" . '"' . val . '"'
+    endif
+  endfor
+endfunction
 
 function! s:current_signs.ids() 
   let ids = map(values(self.signs), 'v:val[0]')
@@ -22,12 +38,6 @@ function! s:current_signs.getNextKey()
   endif
 endfunction
 
-" Set the value of the script-local signs
-" to that of user configured globals
-" if they exist.
-function! s:getConfig() 
-
-endfunction
 
 " Get the current signs set in a file.
 function! s:getSigns()
@@ -48,9 +58,9 @@ function! s:placeSign(line, id)
 endfunction 
 
 function! s:openAnnotation(line, id)
-  let fname = s:gadamer_dir . "/" . expand("%:r") . "-annotation-" . a:id . ".md"
+  let fname = s:config.directory . "/" . expand("%:r") . "-annotation-" . a:id . ".md"
   let s:current_signs.signs[a:line] = [a:id, fname] 
-  exe s:gadamer_winheight . "sp " . fname 
+  exe s:config.height . "sp " . fname 
 endfunction
 
 function! s:saveSigns()
@@ -91,19 +101,26 @@ function! gadamer#Read()
   echo s:current_signs.signs
   if has_key(s:current_signs.signs, line("."))
     let anno = get(s:current_signs.signs, line("."))[1]
-    exe s:gadamer_winheight . "sp " . anno
+    exe s:config.height . "sp " . anno
   else 
     echo "No annotation file found."
   endif
 endfunction
 
-call s:getSigns()
-if filereadable(".gadamer-config")
-  call s:loadSigns()
-endif
+function! s:startup() abort
+  call s:getConfig()
+  exe "sign define gadamer text=" . s:config.signchar 
+  call s:getSigns()
+  
+  if filereadable(".gadamer-config")
+    call s:loadSigns()
+  endif
 
-if !isdirectory(s:gadamer_dir)
-  call mkdir(s:gadamer_dir)
-endif
+  if !isdirectory(s:config.directory)
+    call mkdir(s:config.directory)
+  endif
 
-au VimLeave * call s:saveSigns()
+  au VimLeave * call s:saveSigns()
+endfunction
+
+call s:startup()
