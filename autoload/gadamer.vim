@@ -3,10 +3,10 @@
 
 let s:plugin = maktaba#plugin#Get('gadamer')
 
+let s:file_win = winnr()
 let s:current_signs = {} 
 let s:current_signs.signs = {}
 let s:next_key = 0
-
 function! s:current_signs.ids() 
   let ids = map(values(self.signs), 'v:val[0]')
   return sort(ids, 'n')
@@ -19,7 +19,6 @@ function! s:current_signs.getNextKey()
     let self.next_key = self.ids()[-1] + 1
   endif
 endfunction
-
 
 " Get the current signs set in a file.
 function! s:getSigns()
@@ -84,15 +83,36 @@ function! gadamer#Annotate() abort
   call s:openAnnotation(line("."), s:current_signs.next_key)
 endfunction
 
-function! gadamer#Read()
+function! gadamer#Read(...) abort
+  if a:0 > 0
+    let line = a:2
+  else
+    let line = line(".")
+  endif
+  
   echo s:current_signs.signs
-  if has_key(s:current_signs.signs, line("."))
-    let anno = get(s:current_signs.signs, line("."))[1]
+  if has_key(s:current_signs.signs, line)
+    let anno = get(s:current_signs.signs, line)[1]
     exe s:plugin.Flag('height') . "sp " . anno
   else 
     echo "No annotation file found."
   endif
 endfunction
+ 
+function! gadamer#List() abort
+  let annotations = []
+  for [k, v] in items(s:current_signs.signs)
+    let anno = "line " . k . ': ' . v[1]
+    call add(annotations, [anno, k])
+  endfor
+
+  let annotations_window = maktaba#selector#Create(annotations)
+    \.WithMappings(s:key_maps)
+  
+  call annotations_window.Show()
+endfunction
+
+let s:key_maps = {'<CR>' : ['gadamer#Read', 'Return', 'Open an annotation.']}
 
 function! s:startup() abort
   exe "sign define gadamer text=" . s:plugin.Flag('sign')
