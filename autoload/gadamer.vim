@@ -40,6 +40,11 @@ function! s:placeSign(line, id)
 endfunction 
 
 function! s:openAnnotation(line, id)
+  let dirname = s:plugin.Flag('directory') . "/" . expand("%:h")
+  if !isdirectory(dirname)
+    call mkdir(dirname)
+  endif
+
   let fname = s:plugin.Flag('directory') . "/" . expand("%:r") . "-annotation-" . a:id . ".md"
   let s:current_signs.signs[a:line] = [a:id, fname] 
   exe s:plugin.Flag('height') . "sp " . fname 
