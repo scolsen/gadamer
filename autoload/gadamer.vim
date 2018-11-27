@@ -1,29 +1,11 @@
 " Gadamer API functions.  
 " Sign definitions.
 
+let s:plugin = maktaba#plugin#Get('gadamer')
+
 let s:current_signs = {} 
 let s:current_signs.signs = {}
 let s:next_key = 0
-
-let s:global_prefix = "g:gadamer_"
-let s:config = {}
-let s:config.signchar = '*'
-let s:config.height = 12
-let s:config.directory = '.annotations'
-
-" Set the value of the script-local signs
-" to that of user configured globals
-" if they exist.
-function! s:getConfig() 
-  for key in keys(s:config)
-    let gvar = s:global_prefix . key
-    if exists(gvar)
-      let val = split(execute("echo " . gvar), '\n')[0]
-      echo val
-      exe "let " . "s:config." . key . "=" . '"' . val . '"'
-    endif
-  endfor
-endfunction
 
 function! s:current_signs.ids() 
   let ids = map(values(self.signs), 'v:val[0]')
@@ -58,9 +40,9 @@ function! s:placeSign(line, id)
 endfunction 
 
 function! s:openAnnotation(line, id)
-  let fname = s:config.directory . "/" . expand("%:r") . "-annotation-" . a:id . ".md"
+  let fname = s:plugin.Flag('directory') . "/" . expand("%:r") . "-annotation-" . a:id . ".md"
   let s:current_signs.signs[a:line] = [a:id, fname] 
-  exe s:config.height . "sp " . fname 
+  exe s:plugin.Flag('height') . "sp " . fname 
 endfunction
 
 function! s:saveSigns()
@@ -101,23 +83,22 @@ function! gadamer#Read()
   echo s:current_signs.signs
   if has_key(s:current_signs.signs, line("."))
     let anno = get(s:current_signs.signs, line("."))[1]
-    exe s:config.height . "sp " . anno
+    exe s:plugin.Flag('height') . "sp " . anno
   else 
     echo "No annotation file found."
   endif
 endfunction
 
 function! s:startup() abort
-  call s:getConfig()
-  exe "sign define gadamer text=" . s:config.signchar 
+  exe "sign define gadamer text=" . s:plugin.Flag('sign')
   call s:getSigns()
   
   if filereadable(".gadamer-config")
     call s:loadSigns()
   endif
 
-  if !isdirectory(s:config.directory)
-    call mkdir(s:config.directory)
+  if !isdirectory(s:plugin.Flag('directory'))
+    call mkdir(s:plugin.Flag('directory'))
   endif
 
   au VimLeave * call s:saveSigns()
