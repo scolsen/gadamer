@@ -7,10 +7,9 @@ let s:current_signs.signs = {}
 let s:next_key = 0
 
 let s:global_prefix = "g:gadamer_"
-let s:config = {}
-let s:config.signchar = '*'
-let s:config.height = 12
-let s:config.directory = '.annotations'
+
+let s:config = {'signchar': '*', 'height': 12, 'directory': '.annotations'}
+let s:config.list_window = {'position': 'bo', 'size': 20}
 
 " Set the value of the script-local signs
 " to that of user configured globals
