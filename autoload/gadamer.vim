@@ -27,7 +27,7 @@ function! s:getConfig()
 endfunction
 
 function! s:current_signs.ids() 
-  let ids = map(values(self.signs), 'v:val[0]')
+  let ids = map(values(self.signs), 'v:val[id]')
   return sort(ids, 'n')
 endfunction
 
@@ -49,7 +49,7 @@ function! s:getSigns()
   for signl in split(placed_signs, '\n')[2:]
     let tokens = matchlist(signl, '\v^\s+\S+\=(\d+)\s+\S+\=(\d+)\s+\S+\=(.*)$') 
     let line = str2nr(tokens[1])
-    let s:current_signs.signs[line] = [str2nr(tokens[2])]
+    let s:current_signs.signs[line]["id"] = str2nr(tokens[2])
   endfor
 endfunction
 
@@ -58,18 +58,41 @@ function! s:placeSign(line, id)
 endfunction 
 
 function! s:openAnnotation(line, id)
-  let fname = s:config.directory . "/" . expand("%:r") . "-annotation-" . a:id . ".md"
-  let s:current_signs.signs[a:line] = [a:id, fname]   exe s:config.height . "sp " . fname 
+  let l:fname = s:config.directory . "/" . expand("%:t:r") . "-annotation-" . a:id . ".md"
+  " We have to use a script scoped-variable to store a reference to the latest
+  " signEntry because a function local variable would go out of scope before we
+  " can use it in the call to saveSign. Same deal for the reference to the
+  " current line.
+  let s:current_line = a:line
+  let s:signEntry = {'id': a:id, 'sourceFile': expand("%:p"), 'annoFile': l:fname,}
+  let s:current_signs.signs[a:line] = s:signEntry
+  
+  exe s:config.height . "sp " . fname 
+  " Save this sign to the config file when the buffer is exited.
+  au QuitPre <buffer> call s:saveSign(s:current_line, s:signEntry)
+endfunction
+
+function! s:saveSign(line, signEntry) abort
+  redi! >> .gadamer-config
+    silent! exe "echo " . "\"" . a:signEntry['sourceFile'] . "\"" . " " . a:line . " " . 
+      \ a:signEntry['id'] . " " . "\"" . 
+      \ a:signEntry['annoFile'] . "\""
+  redi! END
 endfunction
 
 function! s:saveSigns()
-  let l:save_file = "." . expand("%:r") . "gadamer-config" 
-
+  " TODO: Determine how to save the configuration to a variable
+  " location.
+  " let l:save_file = expand("%:p:h") . ".gadamer-config" 
+ 
   redi! > .gadamer-config
-    for key in keys(s:current_signs.signs)
-      silent! exe "echo " . "\"" . expand("%") . "\"" . " " . key . " " . get(s:current_signs.signs, key)[0] . " " . "\"" . get(s:current_signs.signs, key)[1] . "\"" 
+    for [line, signEntry] in items(s:current_signs.signs)
+      silent! exe "echo " . "\"" . signEntry['sourceFile'] . "\"" . " " . line . " " . 
+      \ signEntry['id'] . " " . "\"" . 
+      \ signEntry['annoFile'] . "\"" 
     endfor
   redi! END
+
 endfunction
 
 " Load signs from a saved .gadamer-config
@@ -78,12 +101,13 @@ function! s:loadSigns()
   let saved_signs = readfile(".gadamer-config")[1:]
   for item in saved_signs
     let fields = split(item)
-    if fields[0] == expand("%")
-      let s:current_signs.signs[fields[1]] = [fields[2], fields[3]] 
+    if fields[0] == expand("%:p")
+      let s:current_signs.signs[fields[1]] = 
+      \ {'id': fields[2] 'sourceFile': fields[0], 'annoFile': fields[3]}
     endif
   endfor
-  for [k, v] in items(s:current_signs.signs)
-    call s:placeSign(k, v[0])
+  for [line, signEntry] in items(s:current_signs.signs)
+    call s:placeSign(line, signEntry['id'])
   endfor
 endfunction
 
@@ -105,7 +129,7 @@ function! gadamer#Read(...) abort
   
   echo s:current_signs.signs
   if has_key(s:current_signs.signs, line("."))
-    let anno = get(s:current_signs.signs, line("."))[1]
+    let anno = get(s:current_signs.signs, line("."))["annoFile"]
     exe s:config.height . "sp " . anno
   else 
     echo "No annotation file found."
@@ -114,8 +138,8 @@ endfunction
  
 function! gadamer#List() abort
   let annotations = []
-  for [k, v] in items(s:current_signs.signs)
-    let anno = "line " . k . ': ' . v[1]
+  for [line, signEntry] in items(s:current_signs.signs)
+    let anno = "line " . line . ': ' . signEntry["annoFile"]
     call add(annotations, [anno, k])
   endfor
 
@@ -139,8 +163,6 @@ function! s:startup() abort
   if !isdirectory(s:config.directory)
     call mkdir(s:config.directory)
   endif
-
-  au VimLeave * call s:saveSigns()
 endfunction
 
 call s:startup()
