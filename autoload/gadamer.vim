@@ -6,8 +6,11 @@ let s:current_signs = {}
 let s:current_signs.signs = {}
 let s:next_key = 0
 
-let s:global_prefix = "g:gadamer_"
+" Window settings
+let s:list_window_mappings = {'<CR>': 'gadamer#Read(split(getline("."))[1])'}
 
+" Configuration options
+let s:global_prefix = "g:gadamer_"
 let s:config = {'signchar': '*', 'height': 12, 'directory': '.annotations'}
 let s:config.list_window = {'position': 'bo', 'size': 20}
 
@@ -65,7 +68,8 @@ function! s:openAnnotation(line, id)
   let s:current_line = a:line
   let s:signEntry = {'id': a:id, 'sourceFile': expand("%:p"), 'annoFile': l:fname,}
   let s:current_signs.signs[a:line] = s:signEntry
-  
+
+  " TODO: Replace with open editor window.
   exe s:config.height . "sp " . fname 
   " Save this sign to the config file when the buffer is exited.
   au QuitPre <buffer> call s:saveSign(s:current_line, s:signEntry)
@@ -83,7 +87,6 @@ function! s:saveSigns()
   " TODO: Determine how to save the configuration to a variable
   " location.
   " let l:save_file = expand("%:p:h") . ".gadamer-config" 
- 
   redi! > .gadamer-config
     for [line, signEntry] in items(s:current_signs.signs)
       silent! exe "echo " . "\"" . signEntry['sourceFile'] . "\"" . " " . line . " " . 
@@ -91,7 +94,6 @@ function! s:saveSigns()
       \ signEntry['annoFile'] . "\"" 
     endfor
   redi! END
-
 endfunction
 
 " Load signs from a saved .gadamer-config
@@ -102,7 +104,7 @@ function! s:loadSigns()
     let fields = split(item)
     if fields[0] == expand("%:p")
       let s:current_signs.signs[fields[1]] = 
-      \ {'id': fields[2] 'sourceFile': fields[0], 'annoFile': fields[3]}
+      \ {'id': fields[2], 'sourceFile': fields[0], 'annoFile': fields[3]}
     endif
   endfor
   for [line, signEntry] in items(s:current_signs.signs)
@@ -121,14 +123,15 @@ endfunction
 
 function! gadamer#Read(...) abort
   if a:0 > 0
-    let line = a:2
+    let lineNumber = a:1
   else
-    let line = line(".")
+    let lineNumber = line(".")
   endif
   
   echo s:current_signs.signs
-  if has_key(s:current_signs.signs, line("."))
-    let anno = get(s:current_signs.signs, line("."))["annoFile"]
+  echo lineNumber
+  if has_key(s:current_signs.signs, lineNumber)
+    let anno = get(s:current_signs.signs, lineNumber)["annoFile"]
     exe s:config.height . "sp " . anno
   else 
     echo "No annotation file found."
@@ -136,19 +139,31 @@ function! gadamer#Read(...) abort
 endfunction
  
 function! gadamer#List() abort
-  let annotations = []
+  execute s:config.list_window['position'] s:config.list_window['size'] 'new'
+
   for [line, signEntry] in items(s:current_signs.signs)
-    let anno = "line " . line . ': ' . signEntry["annoFile"]
-    call add(annotations, [anno, k])
+    let anno = "line " . line . ' | ' . signEntry["annoFile"]
+    call append(line("$"), anno)
   endfor
 
-  let annotations_window = maktaba#selector#Create(annotations)
-    \.WithMappings(s:key_maps)
-  
-  call annotations_window.Show()
+  call s:setListWindowOptions()
 endfunction
 
-let s:key_maps = {'<CR>' : ['gadamer#Read', 'Return', 'Open an annotation.']}
+" Set buffer/window options for an annotation list window.
+" This function applies these settings to **the current active buffer**
+function! s:setListWindowOptions() abort
+  setlocal buftype=nofile
+  setlocal bufhidden=delete
+  setlocal cursorline
+  setlocal noswapfile
+  setlocal readonly
+
+  for [key, mapping] in items(s:list_window_mappings)
+    let l:map = 'nnoremap <buffer> <silent> ' . key . ' :call ' . mapping .
+    \  '<CR>'
+    execute l:map
+  endfor
+endfunction
 
 function! s:startup() abort
   call s:getConfig()
