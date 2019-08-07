@@ -6,8 +6,14 @@ let s:current_signs = {}
 let s:current_signs.signs = {}
 let s:next_key = 0
 
-" Window settings
-let s:list_window_mappings = {'<CR>': 'gadamer#Read(split(getline("."))[1])'}
+" Window modes
+" Note that we could set a gadamer#window#modes variable and use it directly,
+" however, just as any other variable, it requires scope specification
+" at point of use. Thus, to use it in a function, we'd have to append 'g:'
+" since variable names in functions are locally scoped by default.
+" Simply exposing a getter function that returns the defined modes is
+" slightly more ergonomic.
+let s:modes = gadamer#window#getModes()
 
 " Configuration options
 let s:global_prefix = "g:gadamer_"
@@ -69,8 +75,8 @@ function! s:openAnnotation(line, id)
   let s:signEntry = {'id': a:id, 'sourceFile': expand("%:p"), 'annoFile': l:fname, 'line': a:line,}
   let s:current_signs.signs[a:line] = s:signEntry
 
-  " TODO: Replace with open editor window.
-  exe s:config.height . "sp " . fname 
+  call s:modes.open('edit', [s:signEntry])
+  
   " Save this sign to the config file when the buffer is exited.
   au QuitPre <buffer> call s:saveSign(s:current_line, s:signEntry)
 endfunction
@@ -131,33 +137,14 @@ function! gadamer#Read(...) abort
   echo s:current_signs.signs
   echo lineNumber
   if has_key(s:current_signs.signs, lineNumber)
-    let anno = get(s:current_signs.signs, lineNumber)["annoFile"]
-    exe s:config.height . "sp " . anno
+    call s:modes.open('view', [get(s:current_signs.signs, lineNumber)])
   else 
     echo "No annotation file found."
   endif
 endfunction
  
 function! gadamer#List() abort
-  let l:modes = gadamer#window#getModes()
-  
-  call l:modes.open('list', s:current_signs.signs)
-endfunction
-
-" Set buffer/window options for an annotation list window.
-" This function applies these settings to **the current active buffer**
-function! s:setListWindowOptions() abort
-  setlocal buftype=nofile
-  setlocal bufhidden=delete
-  setlocal cursorline
-  setlocal noswapfile
-  setlocal readonly
-
-  for [key, mapping] in items(s:list_window_mappings)
-    let l:map = 'nnoremap <buffer> <silent> ' . key . ' :call ' . mapping .
-    \  '<CR>'
-    execute l:map
-  endfor
+  call s:modes.open('list', values(s:current_signs.signs))
 endfunction
 
 function! s:startup() abort
