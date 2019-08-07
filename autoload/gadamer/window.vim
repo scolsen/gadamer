@@ -14,7 +14,7 @@ endfunction
 " Determines the contents of the buffer, as well as where the window opens.
 " Each invocation function takes a list of annotations.
 function! s:modes.view.invoke(annotations) 
-  for annotations in values(a:annotations)
+  for annotation in a:annotations
     execute 'e' annotation.annoFile
   endfor
 endfunction
@@ -22,29 +22,29 @@ endfunction
 function! s:modes.edit.invoke(annotations)
   "TODO: Make position and size configurable.
   execute 'bo' 20 'new'
-  for annotation in values(a:annotations)
-    execute 'e' anontation.annoFile
+  for annotation in a:annotations
+    execute 'e' annotation.annoFile
   endfor
 endfunction
 
 function! s:modes.list.invoke(annotations)
   "TODO: Make position and size configurable.
   execute 'bo' 20 'new'
-  for annotation in values(a:annotations)
+  for annotation in a:annotations
     let l:list_item = "line " . annotation.line . ' | ' . annotation.annoFile
     call append(line("$"), l:list_item)
   endfor
 endfunction
 
 function! s:modes.view.setOptions() 
-  setlocal buftype=file
+  setlocal buftype=""
   setlocal bufhidden=delete
   setlocal noswapfile
   setlocal readonly
 endfunction
 
 function! s:modes.edit.setOptions() 
-  setlocal buftype=file
+  setlocal buftype=""
   setlocal swapfile
 endfunction
 
