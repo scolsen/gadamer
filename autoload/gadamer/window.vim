@@ -1,6 +1,6 @@
 " Gadamer window modes.
 
-s:modes = {'view': {}, 'edit': {}, 'list': {}}
+let s:modes = {'view': {}, 'edit': {}, 'list': {}}
 let s:modes.list.mappings = {'<CR>': 'gadamer#Read(split(getline("."))[1])'}
 
 function! s:setWindowMappings(mode)
@@ -14,7 +14,7 @@ endfunction
 " Determines the contents of the buffer, as well as where the window opens.
 " Each invocation function takes a list of annotations.
 function! s:modes.view.invoke(annotations) 
-  for annotations in annotations
+  for annotations in values(a:annotations)
     execute 'e' annotation.annoFile
   endfor
 endfunction
@@ -22,7 +22,7 @@ endfunction
 function! s:modes.edit.invoke(annotations)
   "TODO: Make position and size configurable.
   execute 'bo' 20 'new'
-  for annotation in annotations
+  for annotation in values(a:annotations)
     execute 'e' anontation.annoFile
   endfor
 endfunction
@@ -30,7 +30,7 @@ endfunction
 function! s:modes.list.invoke(annotations)
   "TODO: Make position and size configurable.
   execute 'bo' 20 'new'
-  for annotation in annotations
+  for annotation in values(a:annotations)
     let l:list_item = "line " . annotation.line . ' | ' . annotation.annoFile
     call append(line("$"), l:list_item)
   endfor
@@ -56,8 +56,8 @@ function! s:modes.list.setOptions()
   setlocal readonly 
 endfunction
 
-function! s:modes.open(mode, lineNumber)
-  call s:modes[a:mode].invoke()
+function! s:modes.open(mode, annotations)
+  call s:modes[a:mode].invoke(a:annotations)
   call s:modes[a:mode].setOptions()
   call s:setWindowMappings(a:mode)
 endfunction

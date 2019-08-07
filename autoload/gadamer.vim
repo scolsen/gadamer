@@ -66,7 +66,7 @@ function! s:openAnnotation(line, id)
   " can use it in the call to saveSign. Same deal for the reference to the
   " current line.
   let s:current_line = a:line
-  let s:signEntry = {'id': a:id, 'sourceFile': expand("%:p"), 'annoFile': l:fname,}
+  let s:signEntry = {'id': a:id, 'sourceFile': expand("%:p"), 'annoFile': l:fname, 'line': a:line,}
   let s:current_signs.signs[a:line] = s:signEntry
 
   " TODO: Replace with open editor window.
@@ -139,14 +139,9 @@ function! gadamer#Read(...) abort
 endfunction
  
 function! gadamer#List() abort
-  execute s:config.list_window['position'] s:config.list_window['size'] 'new'
-
-  for [line, signEntry] in items(s:current_signs.signs)
-    let anno = "line " . line . ' | ' . signEntry["annoFile"]
-    call append(line("$"), anno)
-  endfor
-
-  call s:setListWindowOptions()
+  let l:modes = gadamer#window#getModes()
+  
+  call l:modes.open('list', s:current_signs.signs)
 endfunction
 
 " Set buffer/window options for an annotation list window.
