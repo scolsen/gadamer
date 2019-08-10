@@ -82,18 +82,16 @@ endfunction
 
 " Load signs from a saved .gadamer-config
 " Then place marks for each.
-function! s:loadSigns()
-  let saved_signs = readfile(".gadamer-config")[1:]
-  for item in saved_signs
-    let fields = split(item)
+function! s:loadAnnotations()
+  let l:saved_annotations = readfile(".gadamer-config")[1:]
+  
+  for annotation_line in l:saved_annotations
+    let fields = split(annotation_line)
     if fields[0] == expand("%:p")
-      let s:current_signs.signs[fields[1]] = 
-      \ {'id': fields[2], 'sourceFile': fields[0], 'annoFile': fields[3]}
+      let s:current_signs.signs[fields[1]] =
+        \ {'id': fields[2], 'sourceFile': fields[0], 'annoFile': fields[3]}
+      call gadamer#signs#loadSign(fields[1])
     endif
-  endfor
-  for [line, signEntry] in items(s:current_signs.signs)
-    let l:sign = gadamer#signs#new(signEntry.id, line)
-    call gadamer#signs#place(l:sign)
   endfor
 endfunction
 
@@ -102,7 +100,7 @@ endfunction
 " Maintain an association of file<->annotation.
 function! gadamer#Annotate() abort
   call s:current_signs.getNextKey()
-  let l:sign = gadamer#signs#new(s:current_signs.next_key, line("."))
+  let l:sign = gadamer#signs#new(line("."))
   call gadamer#signs#place(l:sign)
   call s:openAnnotation(line("."), s:current_signs.next_key)
 endfunction
@@ -134,7 +132,7 @@ function! s:startup() abort
   let s:current_signs.next_key = get(gadamer#signs#getAllIds(), -1, 0)
   
   if filereadable(".gadamer-config")
-    call s:loadSigns()
+    call s:loadAnnotations()
   endif
 
   if !isdirectory(s:config.directory)
