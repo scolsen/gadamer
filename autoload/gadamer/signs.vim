@@ -4,8 +4,16 @@
 let g:gadamer#signs#NAME = 'gadamer'
 
 " Create a new sign.
-function! gadamer#signs#new(id, line, name) 
-  return {'id': a:id, 'line': a:line, 'name': a:name}
+" If varargs are provided, the first argument is used as a name for the sign.
+" Otherwise g:gadamer#signs#NAME is used by default
+function! gadamer#signs#new(id, line, ...) 
+  let l:name = a:0 >= 1 ? a:1 : g:gadamer#signs#NAME
+  return {'id': a:id, 'line': a:line, 'name': l:name}
+endfunction
+
+" Create a sign from the contents of an annotation.
+function! gadamer#signs#fromAnnotation(id, annotation)
+  return gadamer#signs#new(a:id, a:annotation.line, g:gadamer#signs#NAME)
 endfunction
 
 " Initialize sign support. 
@@ -53,9 +61,11 @@ function! gadamer#signs#getAllIds()
   return sort(l:ids)
 endfunction
 
-" Place a gadamer sign.
-function! gadamer#signs#place(sign)
-  l:placement = "sign place " . a:sign.id . " line=" . a:sign.line . 
-              \ " name=" . g:gadamer#signs#NAME . " file=" . expand("%:p")
+" Place a gadamer sign. The vararg should be a file. If no file is provided, 
+" this function places a sign in the current buffer's file.
+function! gadamer#signs#place(sign, ...)
+  let l:file = a:0 >= 1 ? a:1 : expand("%:p")
+  let l:placement = "sign place " . a:sign.id . " line=" . a:sign.line . 
+              \ " name=" . g:gadamer#signs#NAME . " file=" . l:file
   exe l:placement
 endfunction 

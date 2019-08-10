@@ -40,30 +40,8 @@ function! s:current_signs.ids()
 endfunction
 
 function! s:current_signs.getNextKey()
-  if self.ids() == []
-    let self.next_key = 1
-  else
-    let self.next_key = self.ids()[-1] + 1
-  endif
+  let self.next_key += 1
 endfunction
-
-" Get the current signs set in a file.
-function! s:getSigns()
-  redi => placed_signs 
-    silent! exe 'sign place file=' . expand("%:p")
-  redi END
-  " shamefully cribbed from signify.vim
-  " https://github.com/mhinz/vim-signify
-  for signl in split(placed_signs, '\n')[2:]
-    let tokens = matchlist(signl, '\v^\s+\S+\=(\d+)\s+\S+\=(\d+)\s+\S+\=(.*)$') 
-    let line = str2nr(tokens[1])
-    let s:current_signs.signs[line]["id"] = str2nr(tokens[2])
-  endfor
-endfunction
-
-function! s:placeSign(line, id)
-  exe "sign place " . a:id . " line=" . a:line . " name=gadamer file=" . expand("%:p")  
-endfunction 
 
 function! s:openAnnotation(line, id)
   let l:fname = s:config.directory . "/" . expand("%:t:r") . "-annotation-" . a:id . ".md"
@@ -114,7 +92,8 @@ function! s:loadSigns()
     endif
   endfor
   for [line, signEntry] in items(s:current_signs.signs)
-    call s:placeSign(line, signEntry['id'])
+    let l:sign = gadamer#signs#new(signEntry.id, line)
+    call gadamer#signs#place(l:sign)
   endfor
 endfunction
 
@@ -123,7 +102,8 @@ endfunction
 " Maintain an association of file<->annotation.
 function! gadamer#Annotate() abort
   call s:current_signs.getNextKey()
-  call s:placeSign(line("."), s:current_signs.next_key)
+  let l:sign = gadamer#signs#new(s:current_signs.next_key, line("."))
+  call gadamer#signs#place(l:sign)
   call s:openAnnotation(line("."), s:current_signs.next_key)
 endfunction
 
@@ -149,8 +129,9 @@ endfunction
 
 function! s:startup() abort
   call s:getConfig()
-  exe "sign define gadamer text=" . s:config.signchar 
-  call s:getSigns()
+  "Initialize sign support.
+  call gadamer#signs#init(s:config.signchar)
+  let s:current_signs.next_key = get(gadamer#signs#getAllIds(), -1, 0)
   
   if filereadable(".gadamer-config")
     call s:loadSigns()
