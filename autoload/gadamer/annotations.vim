@@ -1,78 +1,85 @@
 " Implementation of annotations representation.
 
 " A set of annotations. 
-" Annotation uniqueness is predicated on the annotation's `id` field. If two
-" annotation ids are equivalent, the annotations are considered to be
+" Annotation uniqueness is predicated on the annotation's `line` field. If two
+" annotation lines are equivalent, the annotations are considered to be
 " equivalent.
-let s:annotations = {}
+" Each set has an associated source file.
+let s:annotations = {'source_file': '', 'set': []}
 
-let s:annotation =
-  \ {'id': g:gadamer#annotation#EMPTY_VALUE,
-  \  'sourceFile': g:gadamer#annotation#EMPTY_VALUE,
-  \  'line': g:gadamer#annotation#EMPTY_VALUE,
-  \  'annotationFile': g:gadamer#annotation#EMPTY_VALUE,}
-
-function! s:annotation.new(id, source, line, file)
-  let self.id = a:id
-  let self.sourceFile = a:source
-  let self.line = a:line
-  let self.annotationFile = a:file
-  
-  return self
+" Create a new annotation. 
+" Annotations are an association between a segment of a file and another file
+" containing the contents of the annotation.
+" For now, we only support one annotation per line.
+" The actual file association is handled by the `s:annotations`, and not
+" defined as a part of an annotation itself.
+function! gadamer#annotation#new(line, file)
+  return { 'line': '', 'annotationFile': '',}
 endfunction
 
-" Create a new annotation. Copies the base implementation/definition of an
-" annotation, so annotations returned by this function can utilize any of the
-" functions defined on the original annotation dict.
-function! gadamer#annotation#new(id, source, line, file)
-  let l:annotation = copy(s:annotation)
-  return l:annotation.new(a:id, a:source, a:line, a:file)
-endfunction
-
-" Return a sorted list of the ids of all the annotations stored in the set of
+" Return a sorted list of the lines of all the annotations stored in a set of
 " annotations.
-function! s:annotations.ids()
-  return sort(keys(self))
+function! s:annotations.lines()
+  let l:lines = map(copy(self.set), {index, value} -> value.line)
+  return sort(l:lines)
 endfunction
 
-" Remove an annotation from the set.
+" Set membership predicate function.
+" Returns true if the provided annotation is a member of the annotations set.
+function! s:annotations.member(annotation)
+  let l:line = get(a:annotation, 'line')
+  let l:index = index(self.lines(), l:line)
+
+  return l:index == -1 ? v:false : v:true
+endfunction
+
+" Add an annotation to a set of annotations. 
+" If the annotation is already a member of the set, this function does nothing.
+function! s:annotations.add(annotation)
+  if self.member(a:annotation)
+    return 
+  endif
+
+  call append(self.set, a:annotation)
+endfunction
+
+" Remove an annotation from a set of annotations.
 " If the annotation is not in the set, this function does nothing.
 function! s:annotations.remove(annotation)
-  let l:id = get(a:annotation, 'id')
-
-  if !has_key(self, l:id)
+  if !self.member(a:annotation)
     return
   endif
 
-  call remove(self, l:id)
+  let l:index = index(self.lines(), a:annotation.line)
+  call remove(self.set, l:index)
 endfunction
 
-" Add an annotation to the set of annotations. 
-" If the annotation with the same id as the annotation provided as an argument
-" already  exists in the set, this function does nothing. 
-function! s:annotations.add(annotation)
-  let l:id = get(a:annotation, 'id')
-  
-  if has_key(self, l:id)
-    return 
-  else
-    let self[l:id] = a:annotation
+" Update an annotation in a set of annotations.
+" If the provided annotation is not a member of the set, the annotation is
+" added to the set using `s:annotations.add`
+function! s:annotations.update(annotation)
+  if !self.member(a:annotation)
+    call self.add(a:annotation)
+    return
   endif
+
+  let l:index = index(self.lines(), a:annotation.line)
+  self.set[l:index] = a:annotation
 endfunction
 
-" Update an annotation in the set of annotations.
-" If the annotation provided as an argument is not a member of the set, the
-" annotation is added to the set using `s:annotations.add`
-function! s:annotations.update(id, annotation)
-  if has_key(self, a:id) 
-    self[a:id] = a:annotation
-  else
-    self.add(a:annotation)
+" Creates a new set of annotations associated with `a:source` file.
+" Expects a list of annotations as an optional argument, which is used to
+" populate the initial set contents.
+function! s:annotations.new(source_file, ...)
+  let l:annotations = copy(s:annotations)
+
+  l:annotations.source_file = a:source_file
+
+  if a:0 > 0 && type(a:1) == v:t_list
+    for annotation in a:1
+      l:annotations.add(annotation)
+    endfor
   endif
-endfunction
 
-" Returns an empty copy of the annotations dictionary. The copy has access to
-" all the methods defined on the original dictionary.
-function! gadamer#annotation#annotations()
-  return copy(s:annotations)
+  return l:annotations
 endfunction
