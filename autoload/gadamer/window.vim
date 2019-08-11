@@ -7,6 +7,8 @@ let gadamer#window#modes = {'view': {'annotations': [], 'activeAnnotation': {}},
 let gadamer#window#modes.list.mappings = 
   \ {'j': 'g:gadamer#window#modes.list.updateAnnotationOnMove(1)',
   \  'k': 'g:gadamer#window#modes.list.updateAnnotationOnMove(-1)',}
+let gadamer#window#modes.view.mappings = {}
+let gadamer#window#modes.edit.mappings = {}
 
 function! s:defineMappings(mode, mappings)
   for [key, callback] in items(a:mappings)
@@ -46,7 +48,7 @@ endfunction
 function! gadamer#window#modes.view.invoke(annotations, ...) 
   let g:gadamer#window#modes.view.annotations = a:annotations
   for annotation in a:annotations
-    execute 'e' annotation.annoFile
+    execute 'e' annotation.annotation_file
   endfor
   
   if a:0 >= 1 
@@ -59,7 +61,7 @@ function! gadamer#window#modes.edit.invoke(annotations, ...)
   "TODO: Make position and size configurable.
   execute 'bo' 20 'new'
   for annotation in a:annotations
-    execute 'e' annotation.annoFile
+    execute 'e' annotation.annotation_file
   endfor
   
   if a:0 >= 1 
@@ -72,7 +74,7 @@ function! gadamer#window#modes.list.invoke(annotations, ...)
   "TODO: Make position and size configurable.
   execute 'bo' 20 'new'
   for annotation in a:annotations
-    let l:list_item = "line " . annotation.line . ' | ' . annotation.annoFile
+    let l:list_item = "line " . annotation.line . ' | ' . annotation.annotation_file
     call append(line("$"), l:list_item)
   endfor
 
