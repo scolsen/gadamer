@@ -5,7 +5,7 @@
 " annotation lines are equivalent, the annotations are considered to be
 " equivalent.
 " Each set has an associated source file.
-let s:annotations = {'source_file': '', 'set': []}
+let s:annotations = {'source_file': '', 'set': {}}
 
 " Create a new annotation. 
 " Annotations are an association between a segment of a file and another file
@@ -13,24 +13,20 @@ let s:annotations = {'source_file': '', 'set': []}
 " For now, we only support one annotation per line.
 " The actual file association is handled by the `s:annotations`, and not
 " defined as a part of an annotation itself.
-function! gadamer#annotation#new(line, file)
-  return { 'line': '', 'annotationFile': '',}
+function! gadamer#annotations#new(line, file)
+  return { 'line': a:line, 'annotation_file': a:file,}
 endfunction
 
 " Return a sorted list of the lines of all the annotations stored in a set of
 " annotations.
 function! s:annotations.lines()
-  let l:lines = map(copy(self.set), {index, value} -> value.line)
-  return sort(l:lines)
+  return sort(keys(self.set))
 endfunction
 
 " Set membership predicate function.
 " Returns true if the provided annotation is a member of the annotations set.
 function! s:annotations.member(annotation)
-  let l:line = get(a:annotation, 'line')
-  let l:index = index(self.lines(), l:line)
-
-  return l:index == -1 ? v:false : v:true
+  return has_key(self.set, a:annotation.line)
 endfunction
 
 " Add an annotation to a set of annotations. 
@@ -40,7 +36,7 @@ function! s:annotations.add(annotation)
     return 
   endif
 
-  call append(self.set, a:annotation)
+  let self.set[a:annotation.line] = a:annotation
 endfunction
 
 " Remove an annotation from a set of annotations.
@@ -50,8 +46,7 @@ function! s:annotations.remove(annotation)
     return
   endif
 
-  let l:index = index(self.lines(), a:annotation.line)
-  call remove(self.set, l:index)
+  call remove(self.set, a:annotation.line)
 endfunction
 
 " Update an annotation in a set of annotations.
@@ -63,21 +58,26 @@ function! s:annotations.update(annotation)
     return
   endif
 
-  let l:index = index(self.lines(), a:annotation.line)
-  self.set[l:index] = a:annotation
+  let self.set[a:annotation.line] = a:annotation
+endfunction
+
+" Attempt to retrieve an annotation by line number.
+" If the annotation is not a member of the set, an empty dictionary is returned.
+function! s:annotations.getByLine(line)
+  return get(self.set, a:line, {})
 endfunction
 
 " Creates a new set of annotations associated with `a:source` file.
 " Expects a list of annotations as an optional argument, which is used to
 " populate the initial set contents.
-function! s:annotations.new(source_file, ...)
+function! gadamer#annotations#newFileAnnotations(source_file, ...)
   let l:annotations = copy(s:annotations)
 
-  l:annotations.source_file = a:source_file
+  let l:annotations.source_file = a:source_file
 
   if a:0 > 0 && type(a:1) == v:t_list
     for annotation in a:1
-      l:annotations.add(annotation)
+      call l:annotations.add(annotation)
     endfor
   endif
 
