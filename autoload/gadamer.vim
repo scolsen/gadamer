@@ -2,14 +2,11 @@
 " Sign definitions.
 
 let s:file_win = winnr()
-let s:current_signs = {} 
-let s:current_signs.signs = {}
-let s:next_key = 0
 
 " Window modes
 " Note that we could set a gadamer#window#modes variable and use it directly,
-" however, just as any other variable, it requires scope specification
-" at point of use. Thus, to use it in a function, we'd have to append 'g:'
+" however, just as any other variable, it requires scope specification " at point of use. 
+" Thus, to use it in a function, we'd have to append 'g:'
 " since variable names in functions are locally scoped by default.
 " Simply exposing a getter function that returns the defined modes is
 " slightly more ergonomic.
@@ -34,49 +31,24 @@ function! s:getConfig()
   endfor
 endfunction
 
-function! s:current_signs.ids() 
-  let ids = map(values(self.signs), 'v:val[id]')
-  return sort(ids, 'n')
-endfunction
+function! s:openAnnotation(line)
+  let l:annotation_file =
+    \ s:config.directory . "/" . expand("%:t:r") . a:line . ".md"
+  let s:current_annotation = gadamer#annotations#new(a:line, l:annotation_file)
+  call s:current_annotations.add(s:current_annotation)
 
-function! s:current_signs.getNextKey()
-  let self.next_key += 1
-endfunction
-
-function! s:openAnnotation(line, id)
-  let l:fname = s:config.directory . "/" . expand("%:t:r") . "-annotation-" . a:id . ".md"
-  " We have to use a script scoped-variable to store a reference to the latest
-  " signEntry because a function local variable would go out of scope before we
-  " can use it in the call to saveSign. Same deal for the reference to the
-  " current line.
-  let s:current_line = a:line
-  let s:signEntry = {'id': a:id, 'sourceFile': expand("%:p"), 'annoFile': l:fname, 'line': a:line,}
-  let s:current_signs.signs[a:line] = s:signEntry
-
-  call s:modes.open('edit', [s:signEntry])
+  call s:modes.open('edit', [s:current_annotation])
   
-  " Save this sign to the config file when the buffer is exited.
-  au QuitPre <buffer> call s:saveSign(s:current_line, s:signEntry)
+  " Save this annotation to the configuration file when the buffer is exited.
+  au QuitPre <buffer> call s:saveAnnotation(s:current_annotation)
 endfunction
 
-function! s:saveSign(line, signEntry) abort
+function! s:saveAnnotation(annotation) abort
+  let l:annotation_line = "echo \"" . s:current_annotations.source_file .
+    \ " " . a:annotation.line . 
+    \ " " . a:annotation.annotation_file . "\""
   redi! >> .gadamer-config
-    silent! exe "echo " . "\"" . a:signEntry['sourceFile'] . "\"" . " " . a:line . " " . 
-      \ a:signEntry['id'] . " " . "\"" . 
-      \ a:signEntry['annoFile'] . "\""
-  redi! END
-endfunction
-
-function! s:saveSigns()
-  " TODO: Determine how to save the configuration to a variable
-  " location.
-  " let l:save_file = expand("%:p:h") . ".gadamer-config" 
-  redi! > .gadamer-config
-    for [line, signEntry] in items(s:current_signs.signs)
-      silent! exe "echo " . "\"" . signEntry['sourceFile'] . "\"" . " " . line . " " . 
-      \ signEntry['id'] . " " . "\"" . 
-      \ signEntry['annoFile'] . "\"" 
-    endfor
+    silent! exe l:annotation_line
   redi! END
 endfunction
 
@@ -87,10 +59,11 @@ function! s:loadAnnotations()
   
   for annotation_line in l:saved_annotations
     let fields = split(annotation_line)
-    if fields[0] == expand("%:p")
-      let s:current_signs.signs[fields[1]] =
-        \ {'id': fields[2], 'sourceFile': fields[0], 'annoFile': fields[3]}
-      call gadamer#signs#loadSign(fields[1])
+    let [filename, line, annotation_file] = split(annotation_line)
+    if filename == s:current_annotations.source_file
+      let l:annotation = gadamer#annotations#new(line, annotation_file)
+      call s:current_annotations.add(l:annotation)
+      call gadamer#signs#loadSign(l:annotation.line)
     endif
   endfor
 endfunction
@@ -98,38 +71,33 @@ endfunction
 " Do everything we need to do to annotate a file.
 " Create a buffer, create a mark, on save, save the contents.
 " Maintain an association of file<->annotation.
-function! gadamer#Annotate() abort
-  call s:current_signs.getNextKey()
-  let l:sign = gadamer#signs#new(line("."))
+function! gadamer#Annotate(line) abort
+  let l:sign = gadamer#signs#new(a:line)
   call gadamer#signs#place(l:sign)
-  call s:openAnnotation(line("."), s:current_signs.next_key)
+  call s:openAnnotation(a:line)
 endfunction
 
-function! gadamer#Read(...) abort
-  if a:0 > 0
-    let lineNumber = a:1
-  else
-    let lineNumber = line(".")
+function! gadamer#Read(line) abort
+  let l:annotation = s:current_annotations.getByLine(a:line)
+
+  if l:annotation == {}
+    echoerr "No annotation file found."
+    return
   endif
-  
-  echo s:current_signs.signs
-  echo lineNumber
-  if has_key(s:current_signs.signs, lineNumber)
-    call s:modes.open('view', [get(s:current_signs.signs, lineNumber)])
-  else 
-    echo "No annotation file found."
-  endif
+
+  call s:modes.open('view', [l:annotation])
 endfunction
  
 function! gadamer#List() abort
-  call s:modes.open('list', values(s:current_signs.signs))
+  call s:modes.open('list', values(s:current_annotations.set))
 endfunction
 
 function! s:startup() abort
   call s:getConfig()
   "Initialize sign support.
   call gadamer#signs#init(s:config.signchar)
-  let s:current_signs.next_key = get(gadamer#signs#getAllIds(), -1, 0)
+  let s:current_annotations =
+    \ gadamer#annotations#newFileAnnotations(expand("%:p"))
   
   if filereadable(".gadamer-config")
     call s:loadAnnotations()
