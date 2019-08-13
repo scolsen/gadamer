@@ -1,33 +1,43 @@
 " Gadamer window modes.
 
-let gadamer#window#modes = {'view': {'annotations': [], 'activeAnnotation': {}},
-            \  'edit': {'annotations': [], 'activeAnnotation': {}},
-            \  'list': {'annotations': [], 'activeAnnotation': {}},}
+let s:mode =
+  \ {'annotations': [], 'activeAnnotation': {}, 'previousBuffer': 0,
+  \  'mappings': {},}
 
-let gadamer#window#modes.list.mappings = 
+function! s:mode.setPreviousBuffer()
+  let self.previousBuffer = bufnr("%")
+endfunction
+
+function! s:mode.setWindowMappings()
+  for [key, mapping] in items(self.mappings)
+    let l:map = 'nnoremap <buffer> <silent> ' . key . ' :call ' . mapping .
+      \ '<CR>'
+    execute l:map
+  endfor
+endfunction
+
+let gadamer#window#modes =
+  \ {'view': copy(s:mode),
+  \  'edit': copy(s:mode),
+  \  'list': copy(s:mode),}
+
+let gadamer#window#modes.list.mappings =
   \ {'j': 'g:gadamer#window#modes.list.updateAnnotationOnMove(1)',
   \  'k': 'g:gadamer#window#modes.list.updateAnnotationOnMove(-1)',}
-let gadamer#window#modes.view.mappings = {}
+let gadamer#window#modes.view.mappings =
+  \ {'q': 'g:gadamer#window#modes.view.close()'}
 let gadamer#window#modes.edit.mappings = {}
 
 function! s:defineMappings(mode, mappings)
   for [key, callback] in items(a:mappings)
     let invocation = function(callback, [mode.activeAnnotation, mode.annotations]) 
     
-    "let invocation = 
-    "  \ callback . '(get(gadamer#window#modes.' . a:mode .
-    "  \ ', activeAnnotation), get(gadamer#window#modes.' . a:mode . ', annotations)' . ')'
-    
     let g:gadamer#window#modes[a:mode].mappings[key] = invocation
   endfor
 endfunction
 
-function! s:setWindowMappings(mode)
-  for [key, mapping] in items(g:gadamer#window#modes[a:mode].mappings)
-    let l:map = 'nnoremap <buffer> <silent> ' . key . ' :call ' . mapping .
-      \ '<CR>'
-    execute l:map
-  endfor
+function! gadamer#window#modes.view.close()
+  exe "b" . self.previousBuffer
 endfunction
 
 function! gadamer#window#modes.list.updateAnnotationOnMove(modifier)
@@ -104,9 +114,10 @@ function! gadamer#window#modes.list.setOptions()
 endfunction
 
 function! gadamer#window#modes.open(mode, annotations)
+  call g:gadamer#window#modes[a:mode].setPreviousBuffer()
   call g:gadamer#window#modes[a:mode].invoke(a:annotations)
   call g:gadamer#window#modes[a:mode].setOptions()
-  call s:setWindowMappings(a:mode)
+  call g:gadamer#window#modes[a:mode].setWindowMappings()
 endfunction
 
 function! gadamer#window#getModes() 
