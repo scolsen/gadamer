@@ -1,19 +1,56 @@
 " Gadamer window modes.
 
+let s:window_options = {'position': 'bo', 'size': 20}
 let s:mode =
-  \ {'annotations': [], 'activeAnnotation': {}, 'previousBuffer': 0,
-  \  'mappings': {},}
+  \ {'annotations': [], 'active_annotation': {}, 'previous_buffer': 0,
+  \  'mappings': {}, 'window_options': copy(s:window_options)}
 
+" Set the previous buffer of a mode.
 function! s:mode.setPreviousBuffer()
-  let self.previousBuffer = bufnr("%")
+  let self.previous_buffer = bufnr("%")
 endfunction
 
-function! s:mode.setWindowMappings()
+" Called when a mode is invoked.
+function! s:mode.onInvocation(annotation) 
+  return
+endfunction
+
+" Define a set of window mappings for the mode.
+function! s:mode.defineMappings(mappings) 
+  for [key, callback] in items(a:mappings)
+    let invocation = function(callback, [self.active_annotation, self.annotations]) 
+    
+    let self.mappings[key] = invocation
+  endfor
+endfunction
+
+" Bind the mappings defined on a mode to their corresponding keys.
+" This function handles the actual work of binding keys according to the
+" definitions found in `mode.mappings`
+function! s:mode.bindWindowMappings()
   for [key, mapping] in items(self.mappings)
     let l:map = 'nnoremap <buffer> <silent> ' . key . ' :call ' . mapping .
       \ '<CR>'
     execute l:map
   endfor
+endfunction
+
+" Invoke a given mode.
+function! s:mode.invoke(annotations, ...)
+  let self.annotations = a:annotations
+  call self.setPreviousBuffer()
+  
+  if !empty(self.window_options)
+    execute self.window_options.position self.window_options.size 'new'
+  endif
+
+  for annotation in a:annotations
+    call self.onInvocation(annotation)
+  endfor
+
+  if a:0 >= 1
+    call self.defineMappings(a:1)
+  endif
 endfunction
 
 let gadamer#window#modes =
@@ -28,16 +65,10 @@ let gadamer#window#modes.view.mappings =
   \ {'q': 'g:gadamer#window#modes.view.close()'}
 let gadamer#window#modes.edit.mappings = {}
 
-function! s:defineMappings(mode, mappings)
-  for [key, callback] in items(a:mappings)
-    let invocation = function(callback, [mode.activeAnnotation, mode.annotations]) 
-    
-    let g:gadamer#window#modes[a:mode].mappings[key] = invocation
-  endfor
-endfunction
+let gadamer#window#modes.view.window_options = {}
 
 function! gadamer#window#modes.view.close()
-  exe "b" . self.previousBuffer
+  exe "b" . self.previous_buffer
 endfunction
 
 function! gadamer#window#modes.list.updateAnnotationOnMove(modifier)
@@ -45,52 +76,29 @@ function! gadamer#window#modes.list.updateAnnotationOnMove(modifier)
   let l:next_line = l:current_pos[1] + a:modifier
   let l:annotationLine = split(getline(next_line))[1]
   
-  let self.activeAnnotation =
+  let self.active_annotation =
     \ filter(copy(self.annotations), 
     \ {_, val -> val.line == l:annotationLine})[0]
   
   call setpos(".", [0, l:next_line, l:current_pos[2], l:current_pos[3]])
-  echo self.activeAnnotation
+  echo self.active_annotation
 endfunction
 
 " Determines the contents of the buffer, as well as where the window opens.
 " Each invocation function takes a list of annotations.
-function! gadamer#window#modes.view.invoke(annotations, ...) 
-  let g:gadamer#window#modes.view.annotations = a:annotations
-  for annotation in a:annotations
-    execute 'e' annotation.annotation_file
-  endfor
-  
-  if a:0 >= 1 
-    s:defineMappings(self, a:1)
-  endif
+
+function! gadamer#window#modes.view.onInvocation(annotation)
+  execute 'e' a:annotation.annotation_file
 endfunction
 
-function! gadamer#window#modes.edit.invoke(annotations, ...)
-  let g:gadamer#window#modes.edit.annotations = a:annotations
-  "TODO: Make position and size configurable.
-  execute 'bo' 20 'new'
-  for annotation in a:annotations
-    execute 'e' annotation.annotation_file
-  endfor
-  
-  if a:0 >= 1 
-    s:defineMappings(self, a:1)
-  endif
+function! gadamer#window#modes.edit.onInvocation(annotation)
+  execute 'e' a:annotation.annotation_file
 endfunction
 
-function! gadamer#window#modes.list.invoke(annotations, ...)
-  let g:gadamer#window#modes.list.annotations = a:annotations
-  "TODO: Make position and size configurable.
-  execute 'bo' 20 'new'
-  for annotation in a:annotations
-    let l:list_item = "line " . annotation.line . ' | ' . annotation.annotation_file
-    call append(line("$"), l:list_item)
-  endfor
-
-  if a:0 >= 1 
-    s:defineMappings(self, a:1)
-  endif
+function! gadamer#window#modes.list.onInvocation(annotation)
+  let l:list_item = "line " . a:annotation.line . 
+    \ ' | ' . a:annotation.annotation_file
+  call append(line("$"), l:list_item)
 endfunction
 
 function! gadamer#window#modes.view.setOptions() 
@@ -114,10 +122,9 @@ function! gadamer#window#modes.list.setOptions()
 endfunction
 
 function! gadamer#window#modes.open(mode, annotations)
-  call g:gadamer#window#modes[a:mode].setPreviousBuffer()
   call g:gadamer#window#modes[a:mode].invoke(a:annotations)
   call g:gadamer#window#modes[a:mode].setOptions()
-  call g:gadamer#window#modes[a:mode].setWindowMappings()
+  call g:gadamer#window#modes[a:mode].bindWindowMappings()
 endfunction
 
 function! gadamer#window#getModes() 
