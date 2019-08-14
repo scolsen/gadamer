@@ -3,15 +3,6 @@
 
 let s:file_win = winnr()
 
-" Window modes
-" Note that we could set a gadamer#window#modes variable and use it directly,
-" however, just as any other variable, it requires scope specification " at point of use. 
-" Thus, to use it in a function, we'd have to append 'g:'
-" since variable names in functions are locally scoped by default.
-" Simply exposing a getter function that returns the defined modes is
-" slightly more ergonomic.
-let s:modes = gadamer#window#getModes()
-
 " Configuration options
 let s:global_prefix = "g:gadamer_"
 let s:config = {'signchar': '*', 'height': 12, 'directory': '.annotations'}
@@ -37,7 +28,7 @@ function! s:openAnnotation(line)
   let s:current_annotation = gadamer#annotations#new(a:line, l:annotation_file)
   call s:current_annotations.add(s:current_annotation)
 
-  call s:modes.open('edit', [s:current_annotation])
+  call g:gadamer#edit.open([s:current_annotation])
   
   " Save this annotation to the configuration file when the buffer is exited.
   au QuitPre <buffer> call s:saveAnnotation(s:current_annotation)
@@ -85,11 +76,11 @@ function! gadamer#Read(line) abort
     return
   endif
 
-  call s:modes.open('view', [l:annotation])
+  call g:gadamer#view.open([l:annotation])
 endfunction
  
 function! gadamer#List() abort
-  call s:modes.open('list', values(s:current_annotations.set))
+  call g:gadamer#list.open(values(s:current_annotations.set))
 endfunction
 
 function! s:startup() abort
