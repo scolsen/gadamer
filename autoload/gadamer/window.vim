@@ -3,7 +3,8 @@
 let s:window_options = {'position': 'bo', 'size': 20}
 let s:mode =
   \ {'annotations': [], 'active_annotation': {}, 'previous_buffer': 0,
-  \  'mappings': {}, 'window_options': copy(s:window_options)}
+  \  'mappings': {}, 'window_options': copy(s:window_options),
+  \  'local_options': []}
 
 " Set the previous buffer of a mode.
 function! s:mode.setPreviousBuffer()
@@ -32,6 +33,17 @@ function! s:mode.bindWindowMappings()
     let l:map = 'nnoremap <buffer> <silent> ' . key . ' :call ' . mapping .
       \ '<CR>'
     execute l:map
+  endfor
+endfunction
+
+" Set window local options for a mode.
+function! s:mode.setLocalOptions()
+  for option in self.local_options
+    if has_key(option, 'value')
+      exe "setlocal" option.option . "=" . option.value
+    else
+      exe "setlocal" option.option
+    endif
   endfor
 endfunction
 
@@ -67,6 +79,19 @@ let gadamer#window#modes.edit.mappings = {}
 
 let gadamer#window#modes.view.window_options = {}
 
+let gadamer#window#modes.list.local_optsions =
+  \ [{'option': 'readonly'}, {'option': 'noswapfile'},
+  \  {'option': 'cursorline'},
+  \  {'option': 'bufhidden', 'value': 'delete'},
+  \  {'option': 'buftype', 'value': 'nofile'},]
+let gadamer#window#modes.view.local_options =
+  \ [{'option': 'readonly'}, {'option': 'noswapfile'},
+  \  {'option': 'bufhidden', 'value': 'delete'},
+  \  {'option': 'buftype', 'value': ""},]
+let gadamer#window#modes.edit.local_options =
+  \ [{'option': 'swapfile'},
+  \  {'option': 'buftype', 'value': ""},]
+
 function! gadamer#window#modes.view.close()
   exe "b" . self.previous_buffer
 endfunction
@@ -101,29 +126,9 @@ function! gadamer#window#modes.list.onInvocation(annotation)
   call append(line("$"), l:list_item)
 endfunction
 
-function! gadamer#window#modes.view.setOptions() 
-  setlocal buftype=""
-  setlocal bufhidden=delete
-  setlocal noswapfile
-  setlocal readonly
-endfunction
-
-function! gadamer#window#modes.edit.setOptions() 
-  setlocal buftype=""
-  setlocal swapfile
-endfunction
-
-function! gadamer#window#modes.list.setOptions() 
-  setlocal buftype=nofile
-  setlocal bufhidden=delete
-  setlocal cursorline
-  setlocal noswapfile
-  setlocal readonly 
-endfunction
-
 function! gadamer#window#modes.open(mode, annotations)
   call g:gadamer#window#modes[a:mode].invoke(a:annotations)
-  call g:gadamer#window#modes[a:mode].setOptions()
+  call g:gadamer#window#modes[a:mode].setLocalOptions()
   call g:gadamer#window#modes[a:mode].bindWindowMappings()
 endfunction
 
