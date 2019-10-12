@@ -4,7 +4,8 @@ let s:mappings =
   \ {'q': 'g:gadamer#view.close()'}
 let s:window_options = {}
 let s:local_options =
-  \ [{'option': 'swapfile'},
+  \ [{'option': 'readonly'}, {'option': 'noswapfile'},
+  \  {'option': 'bufhidden', 'value': 'delete'},
   \  {'option': 'buftype', 'value': ""},]
 
 let gadamer#view = gadamer#mode#new(s:mappings, s:window_options, s:local_options)
