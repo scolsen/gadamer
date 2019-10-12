@@ -13,9 +13,17 @@ let s:window_options =
 
 let gadamer#list = gadamer#mode#new(s:mappings, s:window_options, s:local_options)
 
+" TODO: Describe this function.
 function! gadamer#list.updateAnnotationOnMove(modifier)
   let l:current_pos = getpos(".")
   let l:next_line = l:current_pos[1] + a:modifier
+
+  if l:next_line <= 1
+    echo "if called"
+    call setpos(".", [0, l:next_line, l:current_pos[2], l:current_pos[3]])
+    return
+  endif
+
   let l:annotationLine = split(getline(next_line))[1]
   
   let self.active_annotation =
