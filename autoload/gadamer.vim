@@ -1,4 +1,4 @@
-" Gadamer API functions.  
+" Gadamer API functions.
 " Sign definitions.
 
 let s:file_win = winnr()
@@ -11,7 +11,7 @@ let s:config.list_window = {'position': 'bo', 'size': 20}
 " Set the value of the script-local signs
 " to that of user configured globals
 " if they exist.
-function! s:getConfig() 
+function! s:getConfig()
   for key in keys(s:config)
     let gvar = s:global_prefix . key
     if exists(gvar)
@@ -29,14 +29,14 @@ function! s:openAnnotation(line)
   call s:current_annotations.add(s:current_annotation)
 
   call g:gadamer#edit.open([s:current_annotation])
-  
+
   " Save this annotation to the configuration file when the buffer is exited.
   au QuitPre <buffer> call s:saveAnnotation(s:current_annotation)
 endfunction
 
 function! s:saveAnnotation(annotation) abort
   let l:annotation_line = "echo \"" . s:current_annotations.source_file .
-    \ " " . a:annotation.line . 
+    \ " " . a:annotation.line .
     \ " " . a:annotation.annotation_file . "\""
   redi! >> .gadamer-config
     silent! exe l:annotation_line
@@ -47,14 +47,14 @@ endfunction
 " Then place marks for each.
 function! s:loadAnnotations()
   let l:saved_annotations = readfile(".gadamer-config")[1:]
-  
+
   for annotation_line in l:saved_annotations
     let fields = split(annotation_line)
     let [filename, line, annotation_file] = split(annotation_line)
     if filename == s:current_annotations.source_file
       let l:annotation = gadamer#annotations#new(line, annotation_file)
       call s:current_annotations.add(l:annotation)
-      call gadamer#signs#loadSign(l:annotation.line)
+      call gadamer#signs#loadSign(l:annotation)
     endif
   endfor
 endfunction
@@ -62,13 +62,16 @@ endfunction
 " Do everything we need to do to annotate a file.
 " Create a buffer, create a mark, on save, save the contents.
 " Maintain an association of file<->annotation.
-function! gadamer#Annotate(line) abort
-  let l:sign = gadamer#signs#new(a:line)
-  call gadamer#signs#place(l:sign)
+function! gadamer#Annotate(line = line(".")) abort
+  " Store a reference to this buffer--otherwise, we'd place the sign
+  " in the annotation buffer by default.
+  let l:buf = expand("%:p")
   call s:openAnnotation(a:line)
+  let l:sign = gadamer#signs#fromAnnotation(s:current_annotation)
+  call gadamer#signs#place(l:sign, l:buf)
 endfunction
 
-function! gadamer#Read(line) abort
+function! gadamer#Read(line = line(".")) abort
   let l:annotation = s:current_annotations.getByLine(a:line)
 
   if l:annotation == {}
@@ -78,7 +81,7 @@ function! gadamer#Read(line) abort
 
   call g:gadamer#view.open([l:annotation])
 endfunction
- 
+
 function! gadamer#List() abort
   call g:gadamer#list.open(values(s:current_annotations.set))
 endfunction
@@ -89,7 +92,7 @@ function! s:startup() abort
   call gadamer#signs#init(s:config.signchar)
   let s:current_annotations =
     \ gadamer#annotations#newFileAnnotations(expand("%:p"))
-  
+
   if filereadable(".gadamer-config")
     call s:loadAnnotations()
   endif
