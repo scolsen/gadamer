@@ -44,6 +44,10 @@ endfunction
 "
 " It also appends help text for each key, if provided, to the current buffer.
 function! s:mode.bindWindowMappings()
+  if empty(self.mappings)
+    return
+  endif
+
   for [key, info] in items(self.mappings)
     if !empty(info.help)
       call append(line("$"), key . ": " . info.help)
