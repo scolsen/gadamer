@@ -1,30 +1,8 @@
 " Gadamer API functions.
-" Sign definitions.
-
-let s:file_win = winnr()
-
-" Configuration options
-let s:global_prefix = "g:gadamer_"
-let s:config = {'signchar': '*', 'height': 12, 'directory': '.annotations'}
-let s:config.list_window = {'position': 'bo', 'size': 20}
-
-" Set the value of the script-local signs
-" to that of user configured globals
-" if they exist.
-function! s:getConfig()
-  for key in keys(s:config)
-    let gvar = s:global_prefix . key
-    if exists(gvar)
-      let val = split(execute("echo " . gvar), '\n')[0]
-      echo val
-      exe "let " . "s:config." . key . "=" . '"' . val . '"'
-    endif
-  endfor
-endfunction
 
 function! s:openAnnotation(line)
   let l:annotation_file =
-    \ s:config.directory . "/" . expand("%:t:r") . a:line . ".md"
+    \ g:gadamer#config.directory . "/" . expand("%:t:r") . a:line . ".md"
   let s:current_annotation = gadamer#annotations#new(a:line, l:annotation_file)
   call s:current_annotations.add(s:current_annotation)
 
@@ -87,9 +65,9 @@ function! gadamer#List() abort
 endfunction
 
 function! s:startup() abort
-  call s:getConfig()
+  call gadamer#config#init()
   "Initialize sign support.
-  call gadamer#signs#init(s:config.signchar)
+  call gadamer#signs#init(g:gadamer#config.signchar)
   let s:current_annotations =
     \ gadamer#annotations#newFileAnnotations(expand("%:p"))
 
@@ -97,8 +75,8 @@ function! s:startup() abort
     call s:loadAnnotations()
   endif
 
-  if !isdirectory(s:config.directory)
-    call mkdir(s:config.directory)
+  if !isdirectory(g:gadamer#config.directory)
+    call mkdir(g:gadamer#config.directory)
   endif
 endfunction
 
