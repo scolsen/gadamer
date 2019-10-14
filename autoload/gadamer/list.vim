@@ -1,8 +1,13 @@
 " Gadamer list mode.
 
+" Stores a reference to the first line that contains a selectable annotation
+" item.
+let s:good_line = v:none
+
 let s:mappings =
-  \ {'j': 'g:gadamer#list.updateAnnotationOnMove(1)',
-  \  'k': 'g:gadamer#list.updateAnnotationOnMove(-1)',}
+  \ { '<CR>': {'mapping': 'g:gadamer#list.openAnnotation()', 'help': 'Open an annotation.'},
+  \   'q': {'mapping': 'g:gadamer#list.close()', 'help': 'Close the list window.'},}
+
 let s:local_options =
   \ [{'option': 'readonly'}, {'option': 'noswapfile'},
   \  {'option': 'cursorline'},
@@ -11,33 +16,42 @@ let s:local_options =
 let s:window_options = 
   \ {'position': 'bo', 'size': 20}
 
-let gadamer#list = gadamer#mode#new(s:mappings, s:window_options, s:local_options)
+let s:help_text = 
+  \ "Annotations available for this file.
+  \ Press enter to open an annotation, or press q to quit."
+
+let gadamer#list = gadamer#mode#new(s:mappings, s:window_options, s:local_options, s:help_text)
 
 " TODO: Describe this function.
-function! gadamer#list.updateAnnotationOnMove(modifier)
-  let l:current_pos = getpos(".")
-  let l:next_line = l:current_pos[1] + a:modifier
-
-  if l:next_line <= 1
-    echo "if called"
-    call setpos(".", [0, l:next_line, l:current_pos[2], l:current_pos[3]])
+function! gadamer#list.openAnnotation()
+  " The first two lines of the list window is do not list annotations.
+  " The first line is empty. The second is help text.
+  if line(".") <= s:good_line
+    echo "No annotation selected."
     return
   endif
 
-  let l:annotationLine = split(getline(next_line))[1]
-  
+  let l:annotation_line = split(getline(line(".")))[1] 
   let self.active_annotation =
     \ filter(copy(self.annotations), 
-    \ {_, val -> val.line == l:annotationLine})[0]
-  
-  call setpos(".", [0, l:next_line, l:current_pos[2], l:current_pos[3]])
-  echo self.active_annotation
+    \ {_, val -> val.line == l:annotation_line})[0]
+ 
+  call g:gadamer#view.open([self.active_annotation]) 
 endfunction
 
 function! gadamer#list.onInvocation(annotation)
+  " Set good_line to the first selectable line number.
+  " Prevents index out of bounds calls on selection.
+  if s:good_line == v:none
+    let s:good_line = line("$")
+  endif
+  
   let l:list_item = "line " . a:annotation.line . 
     \ ' | ' . a:annotation.annotation_file
   call append(line("$"), l:list_item)
 endfunction
 
-
+" Just a synonym for :q
+function! gadamer#list.close()
+  :q
+endfunction
