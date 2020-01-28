@@ -14,3 +14,6 @@ function! gadamer#edit.onInvocation(annotation)
   execute 'e' a:annotation.annotation_file
 endfunction
 
+function! gadamer#edit#init() abort
+
+endfunction

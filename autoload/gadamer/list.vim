@@ -55,3 +55,7 @@ endfunction
 function! gadamer#list.close()
   :q
 endfunction
+
+function! gadamer#edit#init() abort
+
+endfunction

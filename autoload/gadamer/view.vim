@@ -33,3 +33,6 @@ function! gadamer#view.onInvocation(annotation)
   execute 'r' a:annotation.annotation_file
 endfunction
 
+function! gadamer#edit#init() abort
+
+endfunction

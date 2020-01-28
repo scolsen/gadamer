@@ -65,6 +65,10 @@ function! gadamer#List() abort
 endfunction
 
 function! s:startup() abort
+  " Load other components
+  call gaddamer#list#init()
+  call gadamer#edit#init()
+  call gadamer#view#init()
   call gadamer#config#init()
   "Initialize sign support.
   call gadamer#signs#init(g:gadamer#config.signchar)
