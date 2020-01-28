@@ -1,9 +1,15 @@
 " Gadamer API functions.
 
-function! s:openAnnotation(line)
+function! s:openAnnotation(line, ...)
+  if a:0 >= 1
+    let l:end = a:1
+  else
+    let l:end = a:line
+  end
+
   let l:annotation_file =
     \ g:gadamer#config.directory . "/" . expand("%:t:r") . a:line . ".md"
-  let s:current_annotation = gadamer#annotations#open(a:line, l:annotation_file, s:current_annotations)
+  let s:current_annotation = gadamer#annotations#open(a:line, l:end, l:annotation_file, s:current_annotations)
 
   call g:gadamer#edit.open([s:current_annotation])
 
@@ -14,9 +20,9 @@ endfunction
 " Load signs from a saved .gadamer-config
 " Then place marks for each.
 function! s:loadAnnotations()
-  call gadamer#annotations#load(".gadamer-config")
+  call gadamer#annotations#load(".gadamer-config", s:current_annotations)
 
-  for annotation in s:current_annotations
+  for annotation in gadamer#annotations#allAnnotations(s:current_annotations)
     call gadamer#signs#loadSign(annotation)
   endfor
 endfunction
@@ -24,28 +30,43 @@ endfunction
 " Do everything we need to do to annotate a file.
 " Create a buffer, create a mark, on save, save the contents.
 " Maintain an association of file<->annotation.
-function! gadamer#Annotate(line = line(".")) abort
+function! gadamer#Annotate(line = line("."), ...) abort
   " Store a reference to this buffer--otherwise, we'd place the sign
   " in the annotation buffer by default.
   let l:buf = expand("%:p")
-  call s:openAnnotation(a:line)
-  let l:sign = gadamer#signs#fromAnnotation(s:current_annotation)
+
+  if a:0 >=1
+    let l:end = a:1
+  else
+    let l:end = a:line
+  endif
+
+  call s:openAnnotation(a:line, l:end)
+  " TODO: Replace this with a single call to loadSign
+  let l:sign = gadamer#signs#fromAnnotation(s:current_annotation.lines.start)
   call gadamer#signs#place(l:sign, l:buf)
 endfunction
 
+" Opens an annotation for reading.
+" If more than one annotation exists for the given starting line, a list of
+" annotations is returned.
 function! gadamer#Read(line = line(".")) abort
-  let l:annotation = s:current_annotations.getByLine(a:line)
+  let l:annotations = values(s:current_annotations.getByLine(a:line))
 
-  if l:annotation == {}
+  if len(l:annotations) == 0
     echoerr "No annotation file found."
     return
   endif
 
-  call g:gadamer#view.open([l:annotation])
+  if len(l:annotations) == 1
+    call g:gadamer#view.open(l:annotations)
+  else
+    call g:gadamer#list.open(l:annotations)
+  endif
 endfunction
 
 function! gadamer#List() abort
-  call g:gadamer#list.open(values(s:current_annotations.set))
+  call g:gadamer#list.open(gadamer#annotations#allAnnotations(s:current_annotations))
 endfunction
 
 function! s:startup() abort

@@ -13,10 +13,10 @@ let s:local_options =
   \  {'option': 'cursorline'},
   \  {'option': 'bufhidden', 'value': 'delete'},
   \  {'option': 'buftype', 'value': 'nofile'},]
-let s:window_options = 
+let s:window_options =
   \ {'position': 'bo', 'size': 20}
 
-let s:help_text = 
+let s:help_text =
   \ "Annotations available for this file.
   \ Press enter to open an annotation, or press q to quit."
 
@@ -31,12 +31,13 @@ function! gadamer#list.openAnnotation()
     return
   endif
 
-  let l:annotation_line = split(getline(line(".")))[1] 
+  let l:annotation_line = split(getline(line(".")))[1]
+  let [start, end] = split(l:annotation_line, ',')
   let self.active_annotation =
-    \ filter(copy(self.annotations), 
-    \ {_, val -> val.line == l:annotation_line})[0]
- 
-  call g:gadamer#view.open([self.active_annotation]) 
+    \ filter(copy(self.annotations),
+    \ {_, val -> val.lines.start == start && val.lines.end == end})[0]
+
+  call g:gadamer#view.open([self.active_annotation])
 endfunction
 
 function! gadamer#list.onInvocation(annotation)
@@ -45,8 +46,9 @@ function! gadamer#list.onInvocation(annotation)
   if s:good_line == v:none
     let s:good_line = line("$")
   endif
-  
-  let l:list_item = "line " . a:annotation.line . 
+
+  let l:list_item = "lines " . a:annotation.lines.start .
+    \ ',' . a:annotation.lines.end .
     \ ' | ' . a:annotation.annotation_file
   call append(line("$"), l:list_item)
 endfunction

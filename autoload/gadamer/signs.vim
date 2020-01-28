@@ -11,11 +11,11 @@ function! gadamer#signs#new(id, line, name = g:gadamer#signs#NAME)
 endfunction
 
 " Create a sign from the contents of an annotation.
-function! gadamer#signs#fromAnnotation(annotation)
+function! gadamer#signs#fromAnnotation(line)
   let l:ids = gadamer#signs#getAllIds()
   let l:next_id = empty(l:ids) ? 1 : l:ids[-1] + 1
 
-  return gadamer#signs#new(l:next_id, a:annotation.line)
+  return gadamer#signs#new(l:next_id, a:line)
 endfunction
 
 " Initialize sign support.
@@ -64,8 +64,13 @@ function! gadamer#signs#getAllIds()
 endfunction
 
 function! gadamer#signs#loadSign(annotation)
-  let l:sign = gadamer#signs#fromAnnotation(a:annotation)
-  call gadamer#signs#place(l:sign)
+  let l:counter = a:annotation.lines.start
+
+  while l:counter <= a:annotation.lines.end
+    let l:sign = gadamer#signs#fromAnnotation(l:counter)
+    call gadamer#signs#place(l:sign)
+    let l:counter += 1
+  endwhile
 endfunction
 
 " Place a gadamer sign. The vararg should be a file. If no file is provided,

@@ -26,7 +26,8 @@ endfunction
 
 function! gadamer#view.onInvocation(annotation)
   let l:context = "Viewing annotation for line "
-    \ . a:annotation.line . " in file " . a:annotation.annotation_file
+    \ . a:annotation.lines.start . "," . a:annotation.lines.end
+    \ . " in file " . a:annotation.annotation_file
   let self.help_text = l:context . "\\n" . s:help_text
 
   execute '$'
