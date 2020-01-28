@@ -66,7 +66,7 @@ endfunction
 
 function! s:startup() abort
   " Load other components
-  call gaddamer#list#init()
+  call gadamer#list#init()
   call gadamer#edit#init()
   call gadamer#view#init()
   call gadamer#config#init()
