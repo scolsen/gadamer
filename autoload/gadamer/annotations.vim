@@ -83,3 +83,34 @@ function! gadamer#annotations#newFileAnnotations(source_file, ...)
 
   return l:annotations
 endfunction
+
+" Returns a new annotation based on the contents of a saved annotation file
+" and adds it to the given set of annotations.
+function! gadamer#annotations#open(line, file, annotations) abort
+  let l:annotation = gadamer#annotations#new(a:line, a:file)
+  call a:annotations.add(l:annotation)
+  return l:annotation
+endfunction
+
+" Save an annotation to the source file assocaited with a set of annotations.
+function! gadamer#annotations#save(annotation, annotations) abort
+  let l:annotation_line = "echo \"" . a:annotations.source_file .
+    \ " " . a:annotation.line .
+    \ " " . a:annotation.annotation_file . "\""
+  redi! >> .gadamer-config
+    silent! exe l:annotation_line
+  redi! END
+endfunction
+
+function! gadamer#annotations#load(annotations_spec, annotations) abort
+  let l:saved_annotations = readfile(a:annotations_spec)[1:]
+
+  for annotation_line in l:saved_annotations
+    let fields = split(annotation_line)
+    let [filename, line, annotation_file] = split(annotation_line)
+    if filename == a:annotations.source_file
+      let l:annotation = gadamer#annotations#new(line, annotation_file)
+      call a:annotations.add(l:annotation)
+    endif
+  endfor
+endfunction

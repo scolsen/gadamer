@@ -3,37 +3,21 @@
 function! s:openAnnotation(line)
   let l:annotation_file =
     \ g:gadamer#config.directory . "/" . expand("%:t:r") . a:line . ".md"
-  let s:current_annotation = gadamer#annotations#new(a:line, l:annotation_file)
-  call s:current_annotations.add(s:current_annotation)
+  let s:current_annotation = gadamer#annotations#open(a:line, l:annotation_file, s:current_annotations)
 
   call g:gadamer#edit.open([s:current_annotation])
 
   " Save this annotation to the configuration file when the buffer is exited.
-  au QuitPre <buffer> call s:saveAnnotation(s:current_annotation)
-endfunction
-
-function! s:saveAnnotation(annotation) abort
-  let l:annotation_line = "echo \"" . s:current_annotations.source_file .
-    \ " " . a:annotation.line .
-    \ " " . a:annotation.annotation_file . "\""
-  redi! >> .gadamer-config
-    silent! exe l:annotation_line
-  redi! END
+  au QuitPre <buffer> call gadamer#annotations#save(s:current_annotation, s:current_annotations)
 endfunction
 
 " Load signs from a saved .gadamer-config
 " Then place marks for each.
 function! s:loadAnnotations()
-  let l:saved_annotations = readfile(".gadamer-config")[1:]
+  call gadamer#annotations#load(".gadamer-config")
 
-  for annotation_line in l:saved_annotations
-    let fields = split(annotation_line)
-    let [filename, line, annotation_file] = split(annotation_line)
-    if filename == s:current_annotations.source_file
-      let l:annotation = gadamer#annotations#new(line, annotation_file)
-      call s:current_annotations.add(l:annotation)
-      call gadamer#signs#loadSign(l:annotation)
-    endif
+  for annotation in s:current_annotations
+    call gadamer#signs#loadSign(annotation)
   endfor
 endfunction
 
