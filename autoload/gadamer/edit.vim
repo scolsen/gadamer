@@ -2,7 +2,7 @@
 
 let s:mappings = {}
 let s:window_options =
-  \ {'position': 'abo', 'size': 20}
+  \ {'position': 'abo', 'size': 20, 'cmd': 'new',}
 let s:local_options =
   \ [{'option': 'swapfile'},
   \  {'option': 'buftype', 'value': ""},]

@@ -4,7 +4,7 @@ let s:mappings =
   \ { 'q': {'mapping': 'g:gadamer#view.close()', 'help': 'Close the annotation.'},
   \   'e': {'mapping': 'g:gadamer#view.editFile()', 'help': 'Edit this annotation.'},}
 
-let s:window_options = {'position': 'abo', 'size': 20}
+let s:window_options = {'position': 'abo', 'size': 20, 'cmd': 'new',}
 let s:local_options =
   \ [{'option': 'readonly'}, {'option': 'noswapfile'},
   \  {'option': 'bufhidden', 'value': 'delete'},
@@ -28,7 +28,7 @@ function! gadamer#view.onInvocation(annotation)
   let l:context = "Viewing annotation for line "
     \ . a:annotation.lines.start . "," . a:annotation.lines.end
     \ . " in file " . a:annotation.annotation_file
-  let self.help_text = l:context . "\\n" . s:help_text
+  let self.help_text = [l:context]
 
   execute '$'
   execute 'r' a:annotation.annotation_file

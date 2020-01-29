@@ -14,7 +14,7 @@ let s:local_options =
   \  {'option': 'bufhidden', 'value': 'delete'},
   \  {'option': 'buftype', 'value': 'nofile'},]
 let s:window_options =
-  \ {'position': 'bo', 'size': 20}
+  \ {'position': 'bo', 'size': 20, 'cmd': 'new'}
 
 let s:help_text =
   \ "Annotations available for this file.
