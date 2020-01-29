@@ -63,6 +63,8 @@ function! gadamer#visualizer.onInvocation(annotation)
     let self.max_line += 1
   endwhile
 
+  let l:file = split(a:annotation.annotation_file, "/")[-1]
+  
   if getline(a:annotation.lines.start) ==? ''
     call setline(a:annotation.lines.start, a:annotation.annotation_file)
   end
