@@ -43,8 +43,11 @@ endfunction
 function! s:annotations.member(annotation)
   let l:range = a:annotation.lines
 
-  return has_key(self.set, l:range.start)
-    \ && has_key(self.set[l:range.end], a:annotation.lines.end)
+  if !has_key(self.set, l:range.start)
+    return v:false
+  endif
+
+  return has_key(self.set[l:range.start], a:annotation.lines.end)
 endfunction
 
 " Add an annotation to a set of annotations.
