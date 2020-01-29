@@ -27,7 +27,7 @@ endfunction
 " This function defines signs to indicate annotations by using the provided
 " text as the sign symbol.
 function! gadamer#signs#init(text, alt)
-  exe "sign define " . g:gadamer#signs#NAME . " text=" . a:text . " texthl=DiffText"
+  exe "sign define " . g:gadamer#signs#NAME . " text=" . a:text . " texthl=DiffText" . " texthl=DiffText"
   exe "sign define " . g:gadamer#signs#ALT . " text=" . a:alt . " linehl=DiffChange" . " texthl=DiffText"
 endfunction
 
