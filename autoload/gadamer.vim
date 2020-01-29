@@ -49,7 +49,12 @@ function! gadamer#Annotate(line = line("."), ...) abort
     let l:end = a:line
   endif
 
-  call s:openAnnotation(a:line, l:end)
+  if a:0 >= 2
+    call s:openAnnotation(a:line, l:end, a:2)
+  else
+    call s:openAnnotation(a:line, l:end)
+  endif
+
   call gadamer#signs#loadSign(s:current_annotation, l:buf)
 endfunction
 
