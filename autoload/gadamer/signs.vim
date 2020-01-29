@@ -2,6 +2,7 @@
 
 " The gadamer sign name constant.
 let g:gadamer#signs#NAME = 'gadamer'
+let g:gadamer#signs#ALT  = 'gadamer-range'
 
 " Create a new sign.
 " If varargs are provided, the first argument is used as a name for the sign.
@@ -11,9 +12,13 @@ function! gadamer#signs#new(id, line, name = g:gadamer#signs#NAME)
 endfunction
 
 " Create a sign from the contents of an annotation.
-function! gadamer#signs#fromAnnotation(line)
+function! gadamer#signs#fromAnnotation(line, alt = v:false)
   let l:ids = gadamer#signs#getAllIds()
   let l:next_id = empty(l:ids) ? 1 : l:ids[-1] + 1
+
+  if a:alt == v:true
+    return gadamer#signs#new(l:next_id, a:line, g:gadamer#signs#ALT)
+  endif
 
   return gadamer#signs#new(l:next_id, a:line)
 endfunction
@@ -21,8 +26,9 @@ endfunction
 " Initialize sign support.
 " This function defines signs to indicate annotations by using the provided
 " text as the sign symbol.
-function! gadamer#signs#init(text)
-  exe "sign define " . g:gadamer#signs#NAME . " text=" . a:text
+function! gadamer#signs#init(text, alt)
+  exe "sign define " . g:gadamer#signs#NAME . " text=" . a:text . " texthl=DiffText"
+  exe "sign define " . g:gadamer#signs#ALT . " text=" . a:alt . " linehl=DiffChange" . " texthl=DiffText"
 endfunction
 
 " Returns a list containing all the signs in a file. This is needed on startup
@@ -64,10 +70,14 @@ function! gadamer#signs#getAllIds()
 endfunction
 
 function! gadamer#signs#loadSign(annotation, buf = expand("%:p"))
-  let l:counter = a:annotation.lines.start
+  " Place the initial sign.
+  let l:sign = gadamer#signs#fromAnnotation(a:annotation.lines.start)
+  call gadamer#signs#place(l:sign, a:buf)
 
+  " Place continuation signs for range comments.
+  let l:counter = a:annotation.lines.start+1
   while l:counter <= a:annotation.lines.end
-    let l:sign = gadamer#signs#fromAnnotation(l:counter)
+    let l:sign = gadamer#signs#fromAnnotation(l:counter, v:true)
     call gadamer#signs#place(l:sign, a:buf)
     let l:counter += 1
   endwhile
@@ -78,6 +88,6 @@ endfunction
 function! gadamer#signs#place(sign, file = expand("%:p"))
   echo a:sign
   let l:placement = "sign place " . a:sign.id . " line=" . a:sign.line .
-              \ " name=" . g:gadamer#signs#NAME . " file=" . a:file
+              \ " name=" . a:sign.name . " file=" . a:file
   exe l:placement
 endfunction

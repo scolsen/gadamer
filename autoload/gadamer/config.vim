@@ -16,7 +16,8 @@ let gadamer#config = {}
 " The character to use to indicate annotated lines in a file.
 " This character is displayed in the signs column whenever an annotation exists
 " for a given line.
-let gadamer#config.signchar = "*"
+let gadamer#config.signchar = "※"
+let gadamer#config.alt_sign = "|"
 
 " The default height of Gadamer windows.
 let gadamer#config.height = 12

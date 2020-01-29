@@ -87,7 +87,7 @@ function! s:startup() abort
   call gadamer#visualizer#init()
   call gadamer#config#init()
   "Initialize sign support.
-  call gadamer#signs#init(g:gadamer#config.signchar)
+  call gadamer#signs#init(g:gadamer#config.signchar, g:gadamer#config.alt_sign)
   let s:current_annotations =
     \ gadamer#annotations#newFileAnnotations(expand("%:p"))
 
