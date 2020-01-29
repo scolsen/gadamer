@@ -136,7 +136,9 @@ function! gadamer#mode#new(mappings, window_options, local_options, help_text)
   let l:mode.mappings = a:mappings
   let l:mode.window_options = a:window_options
   let l:mode.local_options = a:local_options
-  call l:mode.setHelp([a:help_text])
+  if a:help_text != ""
+    call l:mode.setHelp([a:help_text])
+  endif
 
   return l:mode
 endfunction

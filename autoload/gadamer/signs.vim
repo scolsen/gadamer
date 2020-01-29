@@ -63,12 +63,12 @@ function! gadamer#signs#getAllIds()
   return sort(l:ids)
 endfunction
 
-function! gadamer#signs#loadSign(annotation)
+function! gadamer#signs#loadSign(annotation, buf = expand("%:p"))
   let l:counter = a:annotation.lines.start
 
   while l:counter <= a:annotation.lines.end
     let l:sign = gadamer#signs#fromAnnotation(l:counter)
-    call gadamer#signs#place(l:sign)
+    call gadamer#signs#place(l:sign, a:buf)
     let l:counter += 1
   endwhile
 endfunction

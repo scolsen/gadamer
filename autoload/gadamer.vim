@@ -7,8 +7,16 @@ function! s:openAnnotation(line, ...)
     let l:end = a:line
   end
 
+  " TODO: Add the requisite checks when we're given a name as an argument
+  " Remove ext and replace with md. Ensure file doesn't already exist.
+  if a:0 >= 2
+    let l:name = a:2 . ".md"
+  else
+    let l:name = expand("%:t:r") . a:line . "-" . l:end . ".md"
+  end
+
   let l:annotation_file =
-    \ g:gadamer#config.directory . "/" . expand("%:t:r") . a:line . ".md"
+    \ g:gadamer#config.directory . "/" . l:name
   let s:current_annotation = gadamer#annotations#open(a:line, l:end, l:annotation_file, s:current_annotations)
 
   call g:gadamer#edit.open([s:current_annotation])
@@ -35,16 +43,14 @@ function! gadamer#Annotate(line = line("."), ...) abort
   " in the annotation buffer by default.
   let l:buf = expand("%:p")
 
-  if a:0 >=1
+  if a:0 >= 1
     let l:end = a:1
   else
     let l:end = a:line
   endif
 
   call s:openAnnotation(a:line, l:end)
-  " TODO: Replace this with a single call to loadSign
-  let l:sign = gadamer#signs#fromAnnotation(s:current_annotation.lines.start)
-  call gadamer#signs#place(l:sign, l:buf)
+  call gadamer#signs#loadSign(s:current_annotation, l:buf)
 endfunction
 
 " Opens an annotation for reading.
