@@ -69,11 +69,16 @@ function! gadamer#List() abort
   call g:gadamer#list.open(gadamer#annotations#allAnnotations(s:current_annotations))
 endfunction
 
+function! gadamer#Visualize() abort
+  call g:gadamer#visualizer.open(gadamer#annotations#allAnnotations(s:current_annotations))
+endfunction
+
 function! s:startup() abort
   " Load other components
   call gadamer#list#init()
   call gadamer#edit#init()
   call gadamer#view#init()
+  call gadamer#visualizer#init()
   call gadamer#config#init()
   "Initialize sign support.
   call gadamer#signs#init(g:gadamer#config.signchar)

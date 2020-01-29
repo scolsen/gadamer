@@ -6,7 +6,7 @@
 " Each mode specifies a set of window options, which dictate how it renders a
 " window. If a mode has an empty object for window options, it will render in
 " the active window.
-let s:window_options = {'position': 'bo', 'size': 20}
+let s:window_options = {'position': 'bo', 'size': 20, 'cmd': 'new',}
 
 " A mode is comprised of a set of annotations and an active annotation, it's
 " data--which specific implementations use as they will; knowledge of the
@@ -17,7 +17,7 @@ let s:window_options = {'position': 'bo', 'size': 20}
 let s:mode =
   \ {'annotations': [], 'active_annotation': {}, 'previous_buffer': 0,
   \  'mappings': {}, 'window_options': copy(s:window_options),
-  \  'local_options': [], 'help_text': "",}
+  \  'local_options': [], 'help_text': [], "help_pos": 'top'}
 
 let s:help_options =
   \ [{'option': 'readonly'}, {'option': 'noswapfile'},
@@ -27,6 +27,15 @@ let s:help_options =
 " Set the previous buffer of a mode.
 function! s:mode.setPreviousBuffer()
   let self.previous_buffer = bufnr("%")
+endfunction
+
+" Called when a mode is invoked.
+"
+" Implementations can perform extra setup in prepare before onInvocation is
+" invoked. Typically, we'll use this function for setting properties on the
+" active buffer prior to opening the new window.
+function! s:mode.prepare()
+  return
 endfunction
 
 " Called when a mode is invoked.
@@ -49,17 +58,10 @@ function! s:mode.bindWindowMappings()
   endif
 
   for [key, info] in items(self.mappings)
-    if !empty(info.help)
-      call append(line("$"), key . ": " . info.help)
-    endif
-
     let l:map = 'nnoremap <buffer> <silent> ' . key . ' :call ' . info.mapping .
       \ '<CR>'
     execute l:map
   endfor
-
-  call append(line("$"), "----------")
-  call append(line("$"), "")
 endfunction
 
 " Set window local options for a mode.
@@ -92,17 +94,38 @@ endfunction
 function! s:mode.open(annotations)
   call self.setPreviousBuffer()
 
-  if !empty(self.window_options)
-    execute self.window_options.position self.window_options.size 'new'
-  endif
+  call self.prepare()
 
-  if !empty(self.help_text)
-    call append(line("$"), self.help_text)
+  if !empty(self.window_options)
+    execute self.window_options.position self.window_options.size self.window_options.cmd
   endif
 
   call self.bindWindowMappings()
+
+  if !empty(self.help_text) && self.help_pos ==? 'top'
+    call append(line("$"), self.help_text)
+  endif
+
   call self.invoke(a:annotations)
+
+  if !empty(self.help_text) && self.help_pos ==? 'bot'
+    call append(line("$"), self.help_text)
+  endif
+
   call self.setLocalOptions()
+endfunction
+
+function! s:mode.setHelp(helpText)
+  let self.help_text = a:helpText
+
+  for [key, info] in items(self.mappings)
+    if !empty(info.help)
+      let kstring = key . ": " . info.help
+      let self.help_text = self.help_text + [kstring]
+    endif
+  endfor
+
+  let self.help_text = self.help_text + ["----------"]
 endfunction
 
 " Return a new 'instance' of a mode.
@@ -113,7 +136,7 @@ function! gadamer#mode#new(mappings, window_options, local_options, help_text)
   let l:mode.mappings = a:mappings
   let l:mode.window_options = a:window_options
   let l:mode.local_options = a:local_options
-  let l:mode.help_text = a:help_text
+  call l:mode.setHelp([a:help_text])
 
   return l:mode
 endfunction
