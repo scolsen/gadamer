@@ -70,7 +70,7 @@ function! gadamer#visualizer.onInvocation(annotation)
   end
 
   while l:counter <= a:annotation.lines.end
-    let l:dots = getline(l:counter) . '.'
+    let l:dots = getline(l:counter) . '|'
 
     call setline(l:counter, l:dots)
     let l:counter += 1
