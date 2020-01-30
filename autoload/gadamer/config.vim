@@ -18,6 +18,7 @@ let gadamer#config = {}
 " for a given line.
 let gadamer#config.signchar = "※"
 let gadamer#config.alt_sign = "|"
+let gadamer#config.link_sign = "→"
 
 " The default height of Gadamer windows.
 let gadamer#config.height = 12

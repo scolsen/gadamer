@@ -31,7 +31,11 @@ function! s:loadAnnotations()
   call gadamer#annotations#load(".gadamer-config", s:current_annotations)
 
   for annotation in gadamer#annotations#allAnnotations(s:current_annotations)
-    call gadamer#signs#loadSign(annotation)
+    if annotation.link ==# 'true'
+      call gadamer#signs#loadLinkSign(annotation)
+    else
+      call gadamer#signs#loadSign(annotation)
+    endif
   endfor
 endfunction
 
@@ -92,7 +96,7 @@ function! s:startup() abort
   call gadamer#visualizer#init()
   call gadamer#config#init()
   "Initialize sign support.
-  call gadamer#signs#init(g:gadamer#config.signchar, g:gadamer#config.alt_sign)
+  call gadamer#signs#init(g:gadamer#config.signchar, g:gadamer#config.alt_sign, g:gadamer#config.link_sign)
   let s:current_annotations =
     \ gadamer#annotations#newFileAnnotations(expand("%:p"))
 

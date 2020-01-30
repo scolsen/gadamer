@@ -6,7 +6,6 @@
 " equivalent.
 " Each set has an associated source file.
 let s:annotations = {'source_file': '', 'set': {}}
-let s:line_set = {}
 
 " The range of lines a given annotation spans.
 function! s:range(start, end)
@@ -19,7 +18,7 @@ endfunction
 " For now, we only support one annotation per line.
 " The actual file association is handled by the `s:annotations`, and not
 " defined as a part of an annotation itself.
-function! gadamer#annotations#new(line, file, ...)
+function! gadamer#annotations#new(line, file, link = 'false', dest = 1, ...)
 
   if a:0 < 1
     let l:end = a:line
@@ -29,7 +28,20 @@ function! gadamer#annotations#new(line, file, ...)
 
   let l:range = s:range(a:line, l:end)
 
-  return { 'lines': l:range, 'annotation_file': a:file,}
+  if a:link ==# 'true'
+    if a:0 >= 2
+      let l:dest_end = a:2
+    else
+      let l:dest_end = a:dest
+    endif
+   
+    let l:dest = s:range(a:dest, l:dest_end)
+
+    return { 'lines': l:range, 'annotation_file': a:file, 
+           \ 'link': 'true', 'dest': l:dest}
+  else 
+    return { 'lines': l:range, 'annotation_file': a:file, 'link': 'false',}
+  endif
 endfunction
 
 " Return a sorted list of the lines of all the annotations stored in a set of
@@ -42,12 +54,14 @@ endfunction
 " Returns true if the provided annotation is a member of the annotations set.
 function! s:annotations.member(annotation)
   let l:range = a:annotation.lines
+  let l:set = self.set
 
-  if !has_key(self.set, l:range.start)
+  if !has_key(l:set, l:range.start)
     return v:false
   endif
 
   return has_key(self.set[l:range.start], a:annotation.lines.end)
+    \ && l:set[l:range.start].link ==? a:annotaion.link
 endfunction
 
 " Add an annotation to a set of annotations.
@@ -132,7 +146,10 @@ function! gadamer#annotations#save(annotation, annotations) abort
   let l:annotation_line = "echo \"" . a:annotations.source_file .
     \ " " . a:annotation.lines.start .
     \ " " . a:annotation.lines.end .
-    \ " " . a:annotation.annotation_file . "\""
+    \ " " . a:annotation.annotation_file . "\"" .
+    \ " " . a:annotation.link .
+    \ " " . a:annotation.dest.start .
+    \ " " . a:annotation.dest.end .
   redi! >> .gadamer-config
     silent! exe l:annotation_line
   redi! END
@@ -143,16 +160,19 @@ function! gadamer#annotations#load(annotations_spec, annotations) abort
 
   for annotation_line in l:saved_annotations
     let fields = split(annotation_line)
+    
+    echo fields
 
     if len(fields) == 3
       let [filename, lineStart, annotation_file] = fields
       let lineEnd = lineStart
     else
-      let [filename, lineStart, lineEnd, annotation_file] = fields
+      let [filename, lineStart, lineEnd, annotation_file, link, destStart, destEnd] = fields
     endif
 
     if filename == a:annotations.source_file
-      let l:annotation = gadamer#annotations#new(lineStart, annotation_file, lineEnd)
+      let l:annotation = 
+        \ gadamer#annotations#new(lineStart, annotation_file, link, destStart, lineEnd, destEnd)
       call a:annotations.add(l:annotation)
     endif
   endfor

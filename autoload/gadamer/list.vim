@@ -40,6 +40,19 @@ function! gadamer#list.openAnnotation()
   call g:gadamer#view.open([self.active_annotation])
 endfunction
 
+function! s:setAnnotationLine(annotation)
+return "lines " . a:annotation.lines.start .
+    \ ',' . a:annotation.lines.end .
+    \ ' | ' . a:annotation.annotation_file
+endfunction
+
+function! s:setLinkLine(annotation)
+ return "lines " . a:annotation.lines.start .
+    \ ',' . a:annotation.lines.end .
+    \ ' → ' . a:annotation.annotation_file .
+    \ ' ' . a:annotation.dest.start . ',' . a:annotation.dest.end
+endfunction
+
 function! gadamer#list.onInvocation(annotation)
   " Set good_line to the first selectable line number.
   " Prevents index out of bounds calls on selection.
@@ -47,9 +60,12 @@ function! gadamer#list.onInvocation(annotation)
     let s:good_line = line("$")
   endif
 
-  let l:list_item = "lines " . a:annotation.lines.start .
-    \ ',' . a:annotation.lines.end .
-    \ ' | ' . a:annotation.annotation_file
+  if a:annotation.link ==# 'true'
+    let l:list_item = s:setLinkLine(a:annotation)
+  else
+    let l:list_item = s:setAnnotationLine(a:annotation)
+  endif
+
   call append(line("$"), l:list_item)
 endfunction
 

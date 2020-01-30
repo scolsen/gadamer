@@ -8,7 +8,8 @@ let s:window_options = {'position': 'abo', 'size': 20, 'cmd': 'new',}
 let s:local_options =
   \ [{'option': 'readonly'}, {'option': 'noswapfile'},
   \  {'option': 'bufhidden', 'value': 'delete'},
-  \  {'option': 'buftype', 'value': "nofile"},]
+  \  {'option': 'buftype', 'value': "nofile"},
+  \  {'option': 'signcolumn', 'value': "yes"} ]
 let s:help_text =
   \ "Viewing annotation. Press q to quit."
 
@@ -24,7 +25,7 @@ function! gadamer#view.editFile()
   call s:immersive_editor.open(self.annotations)
 endfunction
 
-function! gadamer#view.onInvocation(annotation)
+function! gadamer#view.viewAnnotation(annotation)
   let l:context = "Viewing annotation for line "
     \ . a:annotation.lines.start . "," . a:annotation.lines.end
     \ . " in file " . a:annotation.annotation_file
@@ -32,6 +33,29 @@ function! gadamer#view.onInvocation(annotation)
 
   execute '$'
   execute 'r' a:annotation.annotation_file
+endfunction
+
+function! gadamer#view.viewLink(annotation)
+  let l:context = "Viewing Link for "
+    \ . a:annotation.lines.start . "," . a:annotation.lines.end
+    \ . " in file " . a:annotation.annotation_file
+  let self.help_text = self.help_text + [l:context] + "----------"
+
+  let l:dest = a:annotation.dest.start + len(self.help_text) + 1
+
+  execute '$'
+  execute 'r' a:annotation.annotation_file
+  execute 'file' a:annotation.annotation_file
+  call gadamer#signs#loadLinkSign(a:annotation)
+  execute l:dest 
+endfunction
+
+function! gadamer#view.onInvocation(annotation)
+  if a:annotation.link ==# 'true'
+    call self.viewLink(a:annotation)
+  else
+    call self.viewAnnotation(a:annotation)
+  endif
 endfunction
 
 function! gadamer#view#init() abort
