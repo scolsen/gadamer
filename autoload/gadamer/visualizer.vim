@@ -66,7 +66,7 @@ function! gadamer#visualizer.onInvocation(annotation)
   let l:file = split(a:annotation.annotation_file, "/")[-1]
   
   if getline(a:annotation.lines.start) ==? ''
-    call setline(a:annotation.lines.start, a:annotation.annotation_file)
+    call setline(a:annotation.lines.start, l:file)
   end
 
   while l:counter <= a:annotation.lines.end
