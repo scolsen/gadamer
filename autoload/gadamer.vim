@@ -32,9 +32,9 @@ function! s:loadAnnotations()
 
   for annotation in gadamer#annotations#allAnnotations(s:current_annotations)
     if annotation.link ==# 'true'
-      call gadamer#signs#loadLinkSign(annotation)
+      call gadamer#signs#loadSign(annotation, g:gadamer#signs#LINK)
     else
-      call gadamer#signs#loadSign(annotation)
+      call gadamer#signs#loadSign(annotation, g:gadamer#signs#NAME)
     endif
   endfor
 endfunction
@@ -59,7 +59,7 @@ function! gadamer#Annotate(line = line("."), ...) abort
     call s:openAnnotation(a:line, l:end)
   endif
 
-  call gadamer#signs#loadSign(s:current_annotation, l:buf)
+  call gadamer#signs#loadSign(s:current_annotation, g:gadamer#signs#NAME, l:buf)
 endfunction
 
 " Opens an annotation for reading.
@@ -69,7 +69,7 @@ function! gadamer#Read(line = line(".")) abort
   let l:annotations = values(s:current_annotations.getByLine(a:line))
 
   if len(l:annotations) == 0
-    echoerr "No annotation file found."
+    echoerr "No annotation for the corresponding line."
     return
   endif
 
@@ -96,7 +96,7 @@ function! s:startup() abort
   call gadamer#visualizer#init()
   call gadamer#config#init()
   "Initialize sign support.
-  call gadamer#signs#init(g:gadamer#config.signchar, g:gadamer#config.alt_sign, g:gadamer#config.link_sign)
+  call gadamer#signs#init(g:gadamer#config.signchar, g:gadamer#config.alt_sign, g:gadamer#config.link_sign, g:gadamer#config.backlink_sign)
   let s:current_annotations =
     \ gadamer#annotations#newFileAnnotations(expand("%:p"))
 

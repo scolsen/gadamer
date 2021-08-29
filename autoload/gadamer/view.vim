@@ -16,6 +16,7 @@ let s:help_text =
 let gadamer#view = gadamer#mode#new(s:mappings, s:window_options, s:local_options, s:help_text)
 
 function! gadamer#view.close()
+  call self.setHelp([s:help_text])
   :q
 endfunction
 
@@ -26,27 +27,20 @@ function! gadamer#view.editFile()
 endfunction
 
 function! gadamer#view.viewAnnotation(annotation)
-  let l:context = "Viewing annotation for line "
-    \ . a:annotation.lines.start . "," . a:annotation.lines.end
-    \ . " in file " . a:annotation.annotation_file
-  let self.help_text = self.help_text + [l:context]
-
   execute '$'
   execute 'r' a:annotation.annotation_file
 endfunction
 
 function! gadamer#view.viewLink(annotation)
-  let l:context = "Viewing Link for "
-    \ . a:annotation.lines.start . "," . a:annotation.lines.end
-    \ . " in file " . a:annotation.annotation_file
-  let self.help_text = self.help_text + l:context
-
   let l:dest = a:annotation.dest.start + len(self.help_text) + 1
+  let l:relative = deepcopy(a:annotation)
+  let l:relative.dest = {'start': l:dest, 'end': l:dest + a:annotation.dest.end}
+  let l:relative.lines = {'start': l:dest, 'end': l:dest + a:annotation.dest.end}
 
   execute '$'
   execute 'r' a:annotation.annotation_file
   execute 'file' a:annotation.annotation_file
-  call gadamer#signs#loadLinkSign(a:annotation)
+  call gadamer#signs#loadSign(l:relative, g:gadamer#signs#BACKLINK)
   execute l:dest 
 endfunction
 
