@@ -4,6 +4,7 @@
 let g:gadamer#signs#NAME = 'gadamer'
 let g:gadamer#signs#ALT  = 'gadamer-range'
 let g:gadamer#signs#LINK = 'gadamer-link'
+let g:gadamer#signs#BACKLINK = 'gadamer-backlink'
 
 " Create a new sign.
 " If varargs are provided, the first argument is used as a name for the sign.
@@ -23,10 +24,11 @@ endfunction
 " Initialize sign support.
 " This function defines signs to indicate annotations by using the provided
 " text as the sign symbol.
-function! gadamer#signs#init(text, alt, link)
+function! gadamer#signs#init(text, alt, link, backlink)
   exe "sign define " . g:gadamer#signs#NAME . " text=" . a:text . " texthl=DiffText" . " texthl=DiffText"
   exe "sign define " . g:gadamer#signs#ALT . " text=" . a:alt . " linehl=DiffChange" . " texthl=DiffText"
-  exe "sign define " . g:gadamer#signs#LINK . " text=" . a:link . " linehl=DiffAdd" . " texthl=DiffAdd"
+  exe "sign define " . g:gadamer#signs#LINK . " text=" . a:link . " linehl=DiffText" . " texthl=DiffText"
+  exe "sign define " . g:gadamer#signs#BACKLINK . " text=" . a:backlink . " linehl=DiffText" . " texthl=DiffText"
 endfunction
 
 " Returns a list containing all the signs in a file. This is needed on startup
@@ -67,29 +69,15 @@ function! gadamer#signs#getAllIds()
   return sort(l:ids)
 endfunction
 
-function! gadamer#signs#loadLinkSign(annotation, buf = expand("%:p"))
+function! gadamer#signs#loadSign(annotation, sign, buf = expand("%:p"))
   " Place the initial sign.
-  let l:sign = gadamer#signs#fromAnnotation(a:annotation.dest.start, g:gadamer#signs#LINK)
+  let l:sign = gadamer#signs#fromAnnotation(a:annotation.lines.start, a:sign)
   call gadamer#signs#place(l:sign, a:buf)
 
   " Place continuation signs for range comments.
   let l:counter = a:annotation.lines.start+1
   while l:counter <= a:annotation.lines.end
-    let l:sign = gadamer#signs#fromAnnotation(l:counter, g:gadamer#signs#LINK)
-    call gadamer#signs#place(l:sign, a:buf)
-    let l:counter += 1
-  endwhile
-endfunction
-
-function! gadamer#signs#loadSign(annotation, buf = expand("%:p"))
-  " Place the initial sign.
-  let l:sign = gadamer#signs#fromAnnotation(a:annotation.lines.start)
-  call gadamer#signs#place(l:sign, a:buf)
-
-  " Place continuation signs for range comments.
-  let l:counter = a:annotation.lines.start+1
-  while l:counter <= a:annotation.lines.end
-    let l:sign = gadamer#signs#fromAnnotation(l:counter, gadamer#signs#ALT)
+    let l:sign = gadamer#signs#fromAnnotation(l:counter, g:gadamer#signs#ALT)
     call gadamer#signs#place(l:sign, a:buf)
     let l:counter += 1
   endwhile
