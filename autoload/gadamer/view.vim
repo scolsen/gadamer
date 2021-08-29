@@ -29,7 +29,7 @@ function! gadamer#view.viewAnnotation(annotation)
   let l:context = "Viewing annotation for line "
     \ . a:annotation.lines.start . "," . a:annotation.lines.end
     \ . " in file " . a:annotation.annotation_file
-  let self.help_text = self.help_text + [l:context] + "----------"
+  let self.help_text = self.help_text + [l:context]
 
   execute '$'
   execute 'r' a:annotation.annotation_file
@@ -39,7 +39,7 @@ function! gadamer#view.viewLink(annotation)
   let l:context = "Viewing Link for "
     \ . a:annotation.lines.start . "," . a:annotation.lines.end
     \ . " in file " . a:annotation.annotation_file
-  let self.help_text = self.help_text + [l:context] + "----------"
+  let self.help_text = self.help_text + l:context
 
   let l:dest = a:annotation.dest.start + len(self.help_text) + 1
 
