@@ -15,8 +15,9 @@ function! s:openAnnotation(line, ...)
     let l:name = expand("%:t:r") . a:line . "-" . l:end . ".md"
   end
 
+  let l:relativedir = expand("%:p:h")
   let l:annotation_file =
-    \ g:gadamer#config.directory . "/" . l:name
+    \ l:relativedir . g:gadamer#config.directory . "/" . l:name
   let s:current_annotation = gadamer#annotations#open(a:line, l:end, l:annotation_file, s:current_annotations, {'start': 1, 'end': 1})
 
   call g:gadamer#edit.open([s:current_annotation])
