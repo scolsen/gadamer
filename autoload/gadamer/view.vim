@@ -39,7 +39,9 @@ function! gadamer#view.viewLink(annotation)
 
   execute '$'
   execute 'r' a:annotation.annotation_file
-  execute 'file' a:annotation.annotation_file
+  " append a suffix, otherwise vim will complain about conflicting buffer names
+  " when the file links to itself.
+  execute 'file' a:annotation.annotation_file . ":gadamer-link"
   call gadamer#signs#loadSign(l:relative, g:gadamer#signs#BACKLINK)
   execute l:dest 
 endfunction

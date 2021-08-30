@@ -17,9 +17,24 @@ function! s:openAnnotation(line, ...)
 
   let l:annotation_file =
     \ g:gadamer#config.directory . "/" . l:name
-  let s:current_annotation = gadamer#annotations#open(a:line, l:end, l:annotation_file, s:current_annotations)
+  let s:current_annotation = gadamer#annotations#open(a:line, l:end, l:annotation_file, s:current_annotations, {'start': 1, 'end': 1})
 
   call g:gadamer#edit.open([s:current_annotation])
+
+  " Save this annotation to the configuration file when the buffer is exited.
+  au QuitPre <buffer> call gadamer#annotations#save(s:current_annotation, s:current_annotations)
+endfunction
+
+function! s:openLink(file, start, end, line, ...)
+  if a:0 >= 1
+    let l:end = a:1
+  else
+    let l:end = a:line
+  end
+
+  let s:current_annotation = gadamer#annotations#open(a:line, l:end, a:file, s:current_annotations, {'start': a:start, 'end': a:end}, 'true')
+
+  call g:gadamer#view.open([s:current_annotation])
 
   " Save this annotation to the configuration file when the buffer is exited.
   au QuitPre <buffer> call gadamer#annotations#save(s:current_annotation, s:current_annotations)
@@ -60,6 +75,20 @@ function! gadamer#Annotate(line = line("."), ...) abort
   endif
 
   call gadamer#signs#loadSign(s:current_annotation, g:gadamer#signs#NAME, l:buf)
+endfunction
+
+function! gadamer#Link(file, start, end, line = line("."), ...)
+let l:buf = expand("%:p")
+
+  if a:0 >= 1
+    let l:end = a:1
+  else
+    let l:end = a:line
+  endif
+
+  call s:openLink(a:file, str2nr(a:start), str2nr(a:end), a:line, l:end)
+
+  call gadamer#signs#loadSign(s:current_annotation, g:gadamer#signs#LINK, l:buf)
 endfunction
 
 " Opens an annotation for reading.
