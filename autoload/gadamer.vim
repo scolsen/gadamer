@@ -15,15 +15,17 @@ function! s:openAnnotation(line, ...)
     let l:name = expand("%:t:r") . a:line . "-" . l:end . ".md"
   end
 
+  let s:config = expand("%:p:h") . "/.gadamer-config"
+
   let l:relativedir = expand("%:p:h")
   let l:annotation_file =
-    \ l:relativedir . g:gadamer#config.directory . "/" . l:name
+    \ l:relativedir . "/" . g:gadamer#config.directory . "/" . l:name
   let s:current_annotation = gadamer#annotations#open(a:line, l:end, l:annotation_file, s:current_annotations, {'start': 1, 'end': 1})
 
   call g:gadamer#edit.open([s:current_annotation])
 
   " Save this annotation to the configuration file when the buffer is exited.
-  au QuitPre <buffer> call gadamer#annotations#save(s:current_annotation, s:current_annotations)
+  au QuitPre <buffer> call gadamer#annotations#save(s:current_annotation, s:current_annotations, s:config)
 endfunction
 
 function! s:openLink(file, start, end, line, ...)
@@ -37,14 +39,18 @@ function! s:openLink(file, start, end, line, ...)
 
   call g:gadamer#view.open([s:current_annotation])
 
+  let s:config = expand("%:p:h") . "/.gadamer-config"
+
   " Save this annotation to the configuration file when the buffer is exited.
-  au QuitPre <buffer> call gadamer#annotations#save(s:current_annotation, s:current_annotations)
+  au QuitPre <buffer> call gadamer#annotations#save(s:current_annotation, s:current_annotations, s:config)
 endfunction
 
 " Load signs from a saved .gadamer-config
 " Then place marks for each.
 function! s:loadAnnotations()
-  call gadamer#annotations#load(".gadamer-config", s:current_annotations)
+  let l:config = expand("%:p:h") . "/" . ".gadamer-config"
+
+  call gadamer#annotations#load(l:config, s:current_annotations)
 
   for annotation in gadamer#annotations#allAnnotations(s:current_annotations)
     if annotation.link ==# 'true'
@@ -130,12 +136,18 @@ function! s:startup() abort
   let s:current_annotations =
     \ gadamer#annotations#newFileAnnotations(expand("%:p"))
 
-  if filereadable(".gadamer-config")
+  let l:fulldir = expand("%:p:h") . "/" . g:gadamer#config.directory
+  let l:config = expand("%:p:h") . "/" . ".gadamer-config"
+ 
+  echo l:config
+  echo filereadable(l:config)
+
+  if filereadable(l:config)
     call s:loadAnnotations()
   endif
 
-  if !isdirectory(g:gadamer#config.directory)
-    call mkdir(g:gadamer#config.directory)
+  if !isdirectory(l:fulldir)
+    call mkdir(l:fulldir)
   endif
 endfunction
 

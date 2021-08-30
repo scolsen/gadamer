@@ -129,21 +129,21 @@ function! gadamer#annotations#open(lineStart, lineEnd, file, annotations, dest, 
 endfunction
 
 " Save an annotation to the source file associated with a set of annotations.
-function! gadamer#annotations#save(annotation, annotations) abort
-  let l:annotation_line = "echon \"" . a:annotations.source_file .
+function! gadamer#annotations#save(annotation, annotations, config_loc) abort
+  let l:annotation_line = "echo \"" . a:annotations.source_file .
     \ " " . a:annotation.lines.start .
     \ " " . a:annotation.lines.end .
     \ " " . a:annotation.annotation_file . 
     \ " " . a:annotation.link .
     \ " " . a:annotation.dest.start .
     \ " " . a:annotation.dest.end . "\""
-  redi! >> .gadamer-config
+  exe 'redi! >> ' a:config_loc
     silent! exe l:annotation_line
   redi! END
 endfunction
 
 function! gadamer#annotations#load(annotations_spec, annotations) abort
-  let l:saved_annotations = readfile(a:annotations_spec)[1:]
+  let l:saved_annotations = readfile(a:annotations_spec)
 
   for annotation_line in l:saved_annotations
     let fields = split(annotation_line)
