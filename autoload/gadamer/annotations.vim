@@ -130,15 +130,16 @@ endfunction
 
 " Save an annotation to the source file associated with a set of annotations.
 function! gadamer#annotations#save(annotation, annotations, config_loc) abort
-  let l:annotation_line = "echo \"" . a:annotations.source_file .
+  let l:annotation_line = "echon \"" . a:annotations.source_file .
     \ "," . a:annotation.lines.start .
     \ "," . a:annotation.lines.end .
-    \ "," . a:annotation.annotation_file . 
+    \ "," . a:annotation.annotation_file .
     \ "," . a:annotation.link .
     \ "," . a:annotation.dest.start .
     \ "," . a:annotation.dest.end . "\""
   exe 'redi! >> ' a:config_loc
     silent! exe l:annotation_line
+    silent! exe "echo \"\""
   redi! END
 endfunction
 
